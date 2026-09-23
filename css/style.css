@@ -1,8 +1,3 @@
-/* =========================================
-   Quick Text Editor Pro - Core Styles
-   Tối ưu hiển thị chuẩn Apple (HIG)
-========================================= */
-
 :root {
     --bg-color: #f2f2f7;
     --text-color: #000000;
@@ -11,11 +6,9 @@
     --border-color: rgba(60, 60, 67, 0.18);
     --btn-bg: rgba(255, 255, 255, 0.9);
     --btn-active: rgba(0, 0, 0, 0.05);
-    
     --primary-color: #007aff;
     --danger-color: #ff3b30;
     --highlight-color: #ff9500;
-    
     --overlay-bg: rgba(0, 0, 0, 0.4);
     --sheet-bg: #f2f2f7;
 }
@@ -29,11 +22,9 @@
         --border-color: rgba(84, 84, 88, 0.65);
         --btn-bg: rgba(44, 44, 46, 0.9);
         --btn-active: rgba(255, 255, 255, 0.1);
-        
         --primary-color: #0a84ff;
         --danger-color: #ff453a;
         --highlight-color: #ff9f0a;
-        
         --overlay-bg: rgba(0, 0, 0, 0.6);
         --sheet-bg: #1c1c1e;
     }
@@ -44,18 +35,24 @@
     -webkit-tap-highlight-color: transparent;
 }
 
-html, body {
+html {
+    background-color: var(--bg-color);
+    height: 100%;
+    overscroll-behavior-y: none;
+}
+
+body {
     margin: 0;
     padding: 0;
-    width: 100%;
-    height: 100%; /* Đổi từ 100dvh sang 100% để lấp đầy phần hụt đáy */
-    position: fixed; /* Khóa chặt giao diện vào khung viền máy, chống lộ nền trắng */
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--bg-color); /* Đồng bộ màu nền cho cả html và body */
+    background-color: var(--bg-color);
     color: var(--text-color);
+    height: 100dvh;
+    min-height: -webkit-fill-available;
     display: flex;
     flex-direction: column;
-    overflow: hidden; 
+    overflow: hidden;
+    overscroll-behavior-y: none;
 }
 
 .app-header {
@@ -65,7 +62,7 @@ html, body {
     padding: calc(env(safe-area-inset-top) + 10px) 16px 10px;
     background: var(--glass-bg);
     backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px); 
+    -webkit-backdrop-filter: blur(20px);
     border-bottom: 0.5px solid var(--border-color);
     z-index: 10;
 }
@@ -87,8 +84,8 @@ html, body {
     flex: 1;
     width: 100%;
     border: none;
-    padding: 16px 16px calc(env(safe-area-inset-bottom) + 80px); 
-    font-size: 17px; 
+    padding: 16px 16px calc(env(safe-area-inset-bottom) + 80px);
+    font-size: 17px;
     line-height: 1.5;
     background: transparent;
     color: var(--text-color);
@@ -96,6 +93,7 @@ html, body {
     outline: none;
     -webkit-appearance: none;
     overflow-y: auto;
+    overscroll-behavior-y: contain;
 }
 
 #mainEditor.monospace-mode {
@@ -123,7 +121,7 @@ html, body {
 .icon-btn {
     background: none;
     border: none;
-    width: 44px; 
+    width: 44px;
     height: 44px;
     display: flex;
     justify-content: center;
@@ -135,20 +133,19 @@ html, body {
 
 .icon-btn:active {
     opacity: 0.7;
-    transform: scale(0.92); 
+    transform: scale(0.92);
     background: var(--btn-active);
 }
 
 .icon-btn svg {
     width: 24px;
     height: 24px;
-    fill: var(--text-color); 
+    fill: var(--text-color);
 }
 
 .icon-btn.primary svg { fill: var(--primary-color); }
 .icon-btn.danger svg { fill: var(--danger-color); }
 .icon-btn.highlight svg { fill: var(--highlight-color); }
-
 .icon-btn.active { background: var(--btn-active); }
 .icon-btn.active svg { fill: var(--primary-color); }
 
@@ -173,7 +170,7 @@ html, body {
     width: 100%;
     padding: 16px 16px calc(env(safe-area-inset-bottom) + 16px);
     transform: translateY(0);
-    transition: transform 0.3s cubic-bezier(0.1, 0.76, 0.55, 1); 
+    transition: transform 0.3s cubic-bezier(0.1, 0.76, 0.55, 1);
 }
 
 .action-sheet-overlay.hidden .action-sheet {
@@ -207,6 +204,7 @@ html, body {
     font-weight: 500;
     border-bottom: 0.5px solid var(--border-color);
 }
+
 .export-option:last-child { border-bottom: none; }
 
 .action-sheet-cancel {
@@ -217,16 +215,15 @@ html, body {
 
 .export-option:active, .action-sheet-cancel:active { background: var(--btn-active); }
 
-/* --- Splash Screen --- */
 .splash-screen {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background-color: var(--bg-color); 
+    background-color: var(--bg-color);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 9999; 
-    transition: opacity 0.5s ease-out; 
+    z-index: 9999;
+    transition: opacity 0.5s ease-out;
 }
 
 .splash-screen.hidden {
@@ -235,8 +232,8 @@ html, body {
 }
 
 .splash-logo {
-    width: 100vw;         /* Tràn hết chiều ngang */
-    height: 100dvh;       /* Tràn hết chiều dọc (chuẩn iOS) */
-    object-fit: cover;    /* Phủ kín không làm méo hình */
-    border-radius: 0;     /* Bỏ bo góc */
+    width: 100vw;
+    height: 100dvh;
+    object-fit: cover;
+    border-radius: 0;
 }
