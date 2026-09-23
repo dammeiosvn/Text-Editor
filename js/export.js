@@ -45,22 +45,18 @@ document.addEventListener('DOMContentLoaded', () => {
             // Kiểm tra xem đã cấu hình tên Phím tắt chưa
             let shortcutName = localStorage.getItem('targetShortcutName');
             if (!shortcutName) {
-                // Nếu chưa có, hỏi ngay lập tức
                 shortcutName = prompt("Sếp chưa cài đặt Phím tắt đích!\nNhập tên Phím tắt sếp muốn gửi văn bản đến:");
                 if (shortcutName && shortcutName.trim() !== "") {
                     localStorage.setItem('targetShortcutName', shortcutName.trim());
                 } else {
-                    // Nếu bấm Hủy, chỉ mở app Phím tắt bình thường
                     window.location.href = "shortcuts://"; 
                     return;
                 }
             }
             
-            // Mã hóa dữ liệu để truyền qua URL an toàn
             const encodedText = encodeURIComponent(text);
             const encodedName = encodeURIComponent(shortcutName.trim());
             
-            // Bắn URL Scheme gọi Phím tắt và truyền Text vào "Shortcut Input"
             window.location.href = `shortcuts://run-shortcut?name=${encodedName}&input=text&text=${encodedText}`;
         });
     }
@@ -111,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ----------------------------------------------------
-    // 5. CHỨC NĂNG XUẤT FILE (TẠO FILE ẢO OFFLINE)
+    // 5. CHỨC NĂNG XUẤT FILE (Cập nhật: Cho phép nhập tên file)
     // ----------------------------------------------------
     const exportOptions = document.querySelectorAll('.export-option');
     exportOptions.forEach(btn => {
@@ -119,13 +115,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const ext = e.target.getAttribute('data-ext');
             if (!ext) return;
 
+            // Ẩn bảng chọn đi trước khi hiện Popup
+            exportSheet.classList.add('hidden');
+
+            // Hiện popup hỏi tên file
+            let customName = prompt(`Nhập tên file để xuất (không cần gõ đuôi ${ext}):`, "Tai_Lieu_Moi");
+            
+            // Nếu bấm Hủy (Cancel) thì thoát
+            if (customName === null) return;
+            
+            // Xử lý khoảng trắng thừa
+            customName = customName.trim();
+            if (customName === "") customName = "Untitled";
+            
+            // Tránh việc sếp gõ nhầm cả đuôi file vào (VD: "code.json" sẽ bị thành "code.json.json")
+            if (customName.endsWith(ext)) {
+                customName = customName.slice(0, -ext.length);
+            }
+
+            const fileName = `${customName}${ext}`;
             const text = editor.value;
             const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
             
-            const date = new Date();
-            const dateStr = `${date.getFullYear()}${(date.getMonth()+1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}`;
-            const fileName = `Sentechtipsvn_${dateStr}${ext}`;
-
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
             a.download = fileName;
@@ -134,7 +145,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             document.body.removeChild(a);
             URL.revokeObjectURL(a.href);
-            exportSheet.classList.add('hidden'); // Ẩn Action Sheet sau khi xuất
         });
     });
 });
