@@ -59,7 +59,7 @@ function initUI() {
         setTimeout(() => {
             splash.classList.add('hidden');
             setTimeout(() => splash.remove(), 500); 
-        }, 800); 
+        }, 2000); 
     }
     // ---------------------------
 
