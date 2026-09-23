@@ -233,14 +233,8 @@ body {
 }
 
 .splash-logo {
-    width: 120px; 
-    height: auto;
-    border-radius: 22px; 
-    animation: pulse 1.5s infinite; 
-}
-
-@keyframes pulse {
-    0% { transform: scale(0.97); }
-    50% { transform: scale(1.03); }
-    100% { transform: scale(0.97); }
+    width: 100vw;         /* Tràn hết chiều ngang */
+    height: 100dvh;       /* Tràn hết chiều dọc (chuẩn iOS) */
+    object-fit: cover;    /* Phủ kín không làm méo hình */
+    border-radius: 0;     /* Bỏ bo góc */
 }
