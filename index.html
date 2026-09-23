@@ -2,27 +2,27 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <!-- Tối ưu hiển thị, khóa zoom, tương thích vùng an toàn (tai thỏ/Dynamic Island) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
     <title>Editor Pro</title>
 
-    <!-- Webclip / PWA Meta Tags chuẩn HIG -->
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Editor Pro">
     
-    <!-- Icons và Splash Screen -->
     <link rel="apple-touch-icon" href="icon/app-icon.png">
     <link rel="icon" type="image/png" href="icon/app-icon.png">
     <link rel="apple-touch-startup-image" href="icon/splash.png">
 
-    <!-- Liên kết CSS -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- Header: Công cụ phụ và trạng thái -->
+    <!-- Màn hình Splash Screen Custom -->
+    <div id="splashScreen" class="splash-screen">
+        <img src="icon/splash.png" alt="Splash Logo" class="splash-logo">
+    </div>
+
     <header class="app-header">
         <div class="header-left">
             <button id="btnSettings" class="icon-btn" aria-label="Settings"></button>
@@ -31,18 +31,14 @@
             <span id="charCount">0 ký tự</span> • <span id="wordCount">0 từ</span>
         </div>
         <div class="header-right">
-            <!-- Nút bật/tắt chế độ Monospace cho Code -->
             <button id="btnCodeMode" class="icon-btn" aria-label="Code Mode"></button>
         </div>
     </header>
 
-    <!-- Main Workspace -->
     <main class="editor-container">
-        <!-- Vùng nhập liệu chính, tắt spellcheck để code không bị gạch đỏ -->
         <textarea id="mainEditor" spellcheck="false" placeholder="Nhập văn bản hoặc code tại đây..."></textarea>
     </main>
 
-    <!-- Thanh công cụ chính (Bottom Toolbar) -->
     <footer class="app-toolbar">
         <button id="btnClear" class="icon-btn danger" aria-label="Clear All"></button>
         <button id="btnCopy" class="icon-btn" aria-label="Copy"></button>
@@ -51,7 +47,6 @@
         <button id="btnReturn" class="icon-btn highlight" aria-label="Return to Shortcut"></button>
     </footer>
 
-    <!-- Modal Action Sheet cho Export File (Bảng chọn chuẩn iOS, ẩn mặc định) -->
     <div id="exportActionSheet" class="action-sheet-overlay hidden">
         <div class="action-sheet">
             <div class="action-sheet-header">Xuất tệp tin</div>
@@ -67,7 +62,6 @@
         </div>
     </div>
 
-    <!-- Tải script xử lý hệ thống -->
     <script src="js/core.js"></script>
     <script src="js/editor.js"></script>
     <script src="js/export.js"></script>
