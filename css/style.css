@@ -44,13 +44,15 @@
     -webkit-tap-highlight-color: transparent;
 }
 
-body {
+html, body {
     margin: 0;
     padding: 0;
+    width: 100%;
+    height: 100%; /* Đổi từ 100dvh sang 100% để lấp đầy phần hụt đáy */
+    position: fixed; /* Khóa chặt giao diện vào khung viền máy, chống lộ nền trắng */
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--bg-color);
+    background-color: var(--bg-color); /* Đồng bộ màu nền cho cả html và body */
     color: var(--text-color);
-    height: 100dvh; 
     display: flex;
     flex-direction: column;
     overflow: hidden; 
