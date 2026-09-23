@@ -4,7 +4,6 @@
 ========================================= */
 
 :root {
-    /* --- Light Mode Variables --- */
     --bg-color: #f2f2f7;
     --text-color: #000000;
     --secondary-text: #8e8e93;
@@ -13,19 +12,16 @@
     --btn-bg: rgba(255, 255, 255, 0.9);
     --btn-active: rgba(0, 0, 0, 0.05);
     
-    /* System Colors */
     --primary-color: #007aff;
     --danger-color: #ff3b30;
     --highlight-color: #ff9500;
     
-    /* Modal / Action Sheet */
     --overlay-bg: rgba(0, 0, 0, 0.4);
     --sheet-bg: #f2f2f7;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        /* --- Dark Mode Variables --- */
         --bg-color: #000000;
         --text-color: #ffffff;
         --secondary-text: #8e8e93;
@@ -34,21 +30,18 @@
         --btn-bg: rgba(44, 44, 46, 0.9);
         --btn-active: rgba(255, 255, 255, 0.1);
         
-        /* System Colors (Sáng hơn một chút trên nền tối) */
         --primary-color: #0a84ff;
         --danger-color: #ff453a;
         --highlight-color: #ff9f0a;
         
-        /* Modal / Action Sheet */
         --overlay-bg: rgba(0, 0, 0, 0.6);
         --sheet-bg: #1c1c1e;
     }
 }
 
-/* --- Base & Reset --- */
 * {
     box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent; /* Tắt hiệu ứng nháy xám khi bấm trên iOS */
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -57,13 +50,11 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background-color: var(--bg-color);
     color: var(--text-color);
-    height: 100dvh; /* Dùng dvh (Dynamic Viewport Height) chuẩn xác cho mobile */
+    height: 100dvh; 
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* Khóa cuộn trang, chỉ cuộn phần text */
+    overflow: hidden; 
 }
-
-/* --- Layout Components --- */
 
 .app-header {
     display: flex;
@@ -72,7 +63,7 @@ body {
     padding: calc(env(safe-area-inset-top) + 10px) 16px 10px;
     background: var(--glass-bg);
     backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px); /* Hỗ trợ Safari */
+    -webkit-backdrop-filter: blur(20px); 
     border-bottom: 0.5px solid var(--border-color);
     z-index: 10;
 }
@@ -94,8 +85,8 @@ body {
     flex: 1;
     width: 100%;
     border: none;
-    padding: 16px 16px calc(env(safe-area-inset-bottom) + 80px); /* Cách thanh công cụ dưới */
-    font-size: 17px; /* 17px giúp Safari không auto-zoom */
+    padding: 16px 16px calc(env(safe-area-inset-bottom) + 80px); 
+    font-size: 17px; 
     line-height: 1.5;
     background: transparent;
     color: var(--text-color);
@@ -105,7 +96,6 @@ body {
     overflow-y: auto;
 }
 
-/* Chế độ dành riêng cho viết Code (Monospace) */
 #mainEditor.monospace-mode {
     font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
     font-size: 15px;
@@ -128,12 +118,10 @@ body {
     z-index: 10;
 }
 
-/* --- Buttons & Icons --- */
-
 .icon-btn {
     background: none;
     border: none;
-    width: 44px; /* Chuẩn tap target của Apple */
+    width: 44px; 
     height: 44px;
     display: flex;
     justify-content: center;
@@ -145,30 +133,22 @@ body {
 
 .icon-btn:active {
     opacity: 0.7;
-    transform: scale(0.92); /* Tạo cảm giác lún nhẹ khi bấm */
+    transform: scale(0.92); 
     background: var(--btn-active);
 }
 
-/* Màu sắc SVG tự động đổ dựa theo Class */
 .icon-btn svg {
     width: 24px;
     height: 24px;
-    fill: var(--text-color); /* Mặc định đổ màu theo text */
+    fill: var(--text-color); 
 }
 
 .icon-btn.primary svg { fill: var(--primary-color); }
 .icon-btn.danger svg { fill: var(--danger-color); }
 .icon-btn.highlight svg { fill: var(--highlight-color); }
 
-/* Trạng thái Active cho nút Code Mode */
-.icon-btn.active {
-    background: var(--btn-active);
-}
-.icon-btn.active svg {
-    fill: var(--primary-color);
-}
-
-/* --- Action Sheet (Bảng tùy chọn Xuất file) --- */
+.icon-btn.active { background: var(--btn-active); }
+.icon-btn.active svg { fill: var(--primary-color); }
 
 .action-sheet-overlay {
     position: fixed;
@@ -191,7 +171,7 @@ body {
     width: 100%;
     padding: 16px 16px calc(env(safe-area-inset-bottom) + 16px);
     transform: translateY(0);
-    transition: transform 0.3s cubic-bezier(0.1, 0.76, 0.55, 1); /* Animation nảy nhẹ đặc trưng iOS */
+    transition: transform 0.3s cubic-bezier(0.1, 0.76, 0.55, 1); 
 }
 
 .action-sheet-overlay.hidden .action-sheet {
@@ -225,9 +205,7 @@ body {
     font-weight: 500;
     border-bottom: 0.5px solid var(--border-color);
 }
-.export-option:last-child {
-    border-bottom: none;
-}
+.export-option:last-child { border-bottom: none; }
 
 .action-sheet-cancel {
     margin-top: 8px;
@@ -235,6 +213,34 @@ body {
     font-weight: 600;
 }
 
-.export-option:active, .action-sheet-cancel:active {
-    background: var(--btn-active);
+.export-option:active, .action-sheet-cancel:active { background: var(--btn-active); }
+
+/* --- Splash Screen --- */
+.splash-screen {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--bg-color); 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; 
+    transition: opacity 0.5s ease-out; 
+}
+
+.splash-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.splash-logo {
+    width: 120px; 
+    height: auto;
+    border-radius: 22px; 
+    animation: pulse 1.5s infinite; 
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.97); }
+    50% { transform: scale(1.03); }
+    100% { transform: scale(0.97); }
 }
