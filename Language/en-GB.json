@@ -1,0 +1,18 @@
+{
+  "app_title": "Quick Text Editor Pro",
+  "modal_title": "Fast text editing",
+  "author": "Author",
+  "contact": "Contact",
+  "info": "Information",
+  "clear_confirm": "Are you sure you want to clear all text?",
+  "export_title": "Export File",
+  "export_prompt": "Enter file name (no need to type {ext} extension):",
+  "shortcut_title": "Send to Shortcut",
+  "shortcut_custom": "✍️ Enter other Shortcut name...",
+  "cancel": "Cancel",
+  "close": "Close",
+  "invalid_json": "Warning: Invalid text format for JSON file!",
+  "invalid_html": "Warning: Invalid text format for HTML file!",
+  "invalid_css": "Warning: Invalid text format for CSS file!",
+  "invalid_config": "Warning: Invalid text format for mobileconfig file!"
+}
