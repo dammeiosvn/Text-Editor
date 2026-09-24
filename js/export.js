@@ -1,69 +1,102 @@
 /* =========================================
    Quick Text Editor Pro - Export & Integration
-   Xuất file, Chia sẻ, Tương tác Shortcut và Cài đặt
+   Xuất file, Chia sẻ, Tương tác Shortcut (Bản Pro)
 ========================================= */
+
+// 1. DANH SÁCH PHÍM TẮT RUỘT LƯU TRÊN CLOUD (GITHUB)
+// Sếp có thể thêm, sửa, xóa tên các phím tắt ở đây. Nó sẽ đồng bộ vĩnh viễn trên mọi thiết bị.
+const MY_SHORTCUTS = [
+    "XulyVanBan",
+    "Lưu tệp",
+    "Dich Thuat"
+];
 
 document.addEventListener('DOMContentLoaded', () => {
     const editor = document.getElementById('mainEditor');
     const exportSheet = document.getElementById('exportActionSheet');
 
-    // ----------------------------------------------------
-    // 1. NÚT CÀI ĐẶT (GÓC TRÁI HEADER) - Cấu hình Phím tắt
-    // ----------------------------------------------------
+    // --- NÚT CÀI ĐẶT (Thông báo cơ chế mới) ---
     const btnSettings = document.getElementById('btnSettings');
     if (btnSettings) {
         btnSettings.addEventListener('click', () => {
             if (navigator.vibrate) navigator.vibrate(50);
-            
-            let currentName = localStorage.getItem('targetShortcutName') || "";
-            let newName = prompt("⚙️ CÀI ĐẶT WEBCLIP\n\nNhập tên Phím tắt trên máy mà sếp muốn gửi văn bản đến (Ví dụ: Luu Code, Dich Thuat...):", currentName);
-            
-            if (newName !== null) {
-                if (newName.trim() === "") {
-                    localStorage.removeItem('targetShortcutName');
-                    alert("Đã xóa liên kết Phím tắt.");
-                } else {
-                    localStorage.setItem('targetShortcutName', newName.trim());
-                    alert("Đã cập nhật Phím tắt đích thành:\n" + newName.trim());
-                }
-            }
+            alert("⚙️ CẤU HÌNH HỆ THỐNG\n\nDanh sách Phím tắt đích hiện được lưu cứng trên GitHub (file export.js) để đồng bộ vĩnh viễn trên mọi thiết bị của sếp.\n\nSếp hãy vào repo để thêm/sửa tên Phím tắt nhé!");
         });
     }
 
-    // ----------------------------------------------------
-    // 2. NÚT GỬI VỀ PHÍM TẮT (SHORTCUT INTEGRATION)
-    // ----------------------------------------------------
+    // --- TẠO MENU CHỌN PHÍM TẮT ĐỘNG ---
+    function createShortcutSheet() {
+        const existing = document.getElementById('shortcutActionSheet');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'shortcutActionSheet';
+        overlay.className = 'action-sheet-overlay hidden';
+
+        let optionsHtml = '';
+        MY_SHORTCUTS.forEach(name => {
+            optionsHtml += `<button class="export-option shortcut-option" data-name="${name}">${name}</button>`;
+        });
+        optionsHtml += `<button class="export-option shortcut-option" data-name="CUSTOM">✍️ Nhập tên Phím tắt khác...</button>`;
+
+        overlay.innerHTML = `
+            <div class="action-sheet">
+                <div class="action-sheet-header">Bắn dữ liệu sang Phím tắt</div>
+                <div class="action-sheet-options">
+                    ${optionsHtml}
+                </div>
+                <button class="action-sheet-cancel" id="btnCancelShortcut">Hủy</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        setTimeout(() => overlay.classList.remove('hidden'), 10);
+
+        const btnCancel = overlay.querySelector('#btnCancelShortcut');
+        btnCancel.addEventListener('click', () => {
+            overlay.classList.add('hidden');
+            setTimeout(() => overlay.remove(), 300);
+        });
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.classList.add('hidden');
+                setTimeout(() => overlay.remove(), 300);
+            }
+        });
+
+        const options = overlay.querySelectorAll('.shortcut-option');
+        options.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                let targetName = e.target.getAttribute('data-name');
+                if (targetName === 'CUSTOM') {
+                    targetName = prompt("Nhập tên Phím tắt sếp muốn gửi đến:");
+                    if (!targetName || targetName.trim() === "") return;
+                }
+
+                const text = editor.value;
+                navigator.clipboard.writeText(text);
+                if (navigator.vibrate) navigator.vibrate(50);
+
+                const encodedText = encodeURIComponent(text);
+                const encodedName = encodeURIComponent(targetName.trim());
+                window.location.href = `shortcuts://run-shortcut?name=${encodedName}&input=text&text=${encodedText}`;
+
+                overlay.classList.add('hidden');
+                setTimeout(() => overlay.remove(), 300);
+            });
+        });
+    }
+
+    // --- NÚT GỬI VỀ PHÍM TẮT ---
     const btnReturn = document.getElementById('btnReturn');
     if (btnReturn) {
         btnReturn.addEventListener('click', () => {
-            const text = editor.value;
-            
-            // Backup 1: Tự động copy vào bộ nhớ tạm
-            navigator.clipboard.writeText(text);
-            if (navigator.vibrate) navigator.vibrate(50);
-            
-            // Kiểm tra xem đã cấu hình tên Phím tắt chưa
-            let shortcutName = localStorage.getItem('targetShortcutName');
-            if (!shortcutName) {
-                shortcutName = prompt("Sếp chưa cài đặt Phím tắt đích!\nNhập tên Phím tắt sếp muốn gửi văn bản đến:");
-                if (shortcutName && shortcutName.trim() !== "") {
-                    localStorage.setItem('targetShortcutName', shortcutName.trim());
-                } else {
-                    window.location.href = "shortcuts://"; 
-                    return;
-                }
-            }
-            
-            const encodedText = encodeURIComponent(text);
-            const encodedName = encodeURIComponent(shortcutName.trim());
-            
-            window.location.href = `shortcuts://run-shortcut?name=${encodedName}&input=text&text=${encodedText}`;
+            createShortcutSheet();
         });
     }
 
-    // ----------------------------------------------------
-    // 3. NÚT COPY (Có hiệu ứng nháy xanh)
-    // ----------------------------------------------------
+    // --- NÚT COPY ---
     const btnCopy = document.getElementById('btnCopy');
     if (btnCopy) {
         btnCopy.addEventListener('click', async () => {
@@ -85,9 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ----------------------------------------------------
-    // 4. NÚT CHIA SẺ (SHARE API)
-    // ----------------------------------------------------
+    // --- NÚT CHIA SẺ ---
     const btnShare = document.getElementById('btnShare');
     if (btnShare) {
         btnShare.addEventListener('click', async () => {
@@ -106,32 +137,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ----------------------------------------------------
-    // 5. CHỨC NĂNG XUẤT FILE (Cập nhật: Cho phép nhập tên file)
-    // ----------------------------------------------------
-    const exportOptions = document.querySelectorAll('.export-option');
+    // --- CHỨC NĂNG XUẤT FILE ---
+    const exportOptions = document.querySelectorAll('.export-option:not(.shortcut-option)');
     exportOptions.forEach(btn => {
         btn.addEventListener('click', (e) => {
             const ext = e.target.getAttribute('data-ext');
             if (!ext) return;
 
-            // Ẩn bảng chọn đi trước khi hiện Popup
             exportSheet.classList.add('hidden');
 
-            // Hiện popup hỏi tên file
             let customName = prompt(`Nhập tên file để xuất (không cần gõ đuôi ${ext}):`, "Tai_Lieu_Moi");
-            
-            // Nếu bấm Hủy (Cancel) thì thoát
             if (customName === null) return;
             
-            // Xử lý khoảng trắng thừa
             customName = customName.trim();
             if (customName === "") customName = "Untitled";
-            
-            // Tránh việc sếp gõ nhầm cả đuôi file vào (VD: "code.json" sẽ bị thành "code.json.json")
-            if (customName.endsWith(ext)) {
-                customName = customName.slice(0, -ext.length);
-            }
+            if (customName.endsWith(ext)) customName = customName.slice(0, -ext.length);
 
             const fileName = `${customName}${ext}`;
             const text = editor.value;
