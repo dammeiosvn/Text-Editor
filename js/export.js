@@ -1,5 +1,5 @@
 const MY_SHORTCUTS = [
-    "XulyVanBan",
+    "Commit",
     "Lưu tệp",
     "Dich Thuat"
 ];
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const exportOptions = document.querySelectorAll('.export-option:not(.shortcut-option)');
     exportOptions.forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', async (e) => {
             const ext = e.target.getAttribute('data-ext');
             if (!ext) return;
 
@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            let customName = prompt(`Nhập tên file để xuất (không cần gõ đuôi ${ext}):`, "Tai_Lieu_Moi");
+            let customName = prompt(t('export_prompt').replace('{ext}', ext), "Tai_Lieu_Moi");
             if (customName === null) return;
             
             customName = customName.trim();
@@ -173,16 +173,36 @@ document.addEventListener('DOMContentLoaded', () => {
             if (customName.endsWith(ext)) customName = customName.slice(0, -ext.length);
 
             const fileName = `${customName}${ext}`;
-            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-            
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            
-            document.body.removeChild(a);
-            URL.revokeObjectURL(a.href);
+            const mimeTypes = {
+                '.txt': 'text/plain',
+                '.json': 'application/json',
+                '.css': 'text/css',
+                '.html': 'text/html',
+                '.mobileconfig': 'application/x-apple-aspen-config',
+                '.js': 'text/javascript'
+            };
+            const mimeType = mimeTypes[ext] || 'text/plain';
+            const blob = new Blob([text], { type: `${mimeType};charset=utf-8` });
+            const file = new File([blob], fileName, { type: mimeType });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: fileName
+                    });
+                } catch (error) {
+                    console.log('Hủy chia sẻ file', error);
+                }
+            } else {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(a.href);
+            }
         });
     });
 });
