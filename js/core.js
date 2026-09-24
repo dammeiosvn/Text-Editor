@@ -152,14 +152,12 @@ function openMacModal() {
                     </div>
                     <span>➔</span>
                 </a>
-                <div class="pill-card" style="flex-direction: column; align-items: flex-start; cursor: default;">
-                    <div class="pill-left" style="margin-bottom: 8px;">
+                <div class="pill-card" id="infoPillBtn" style="cursor: pointer;">
+                    <div class="pill-left">
                         <img src="icon/info.png" class="pill-icon" alt="Info">
-                        <span style="font-weight: 600;">${t('info')}</span>
+                        <span>${t('info')}</span>
                     </div>
-                    <div class="pill-info-text">
-                        Quick Text Editor Pro v2.6. Công cụ soạn thảo văn bản và mã nguồn tối ưu cho iOS Shortcuts. Hỗ trợ tự động lưu, xuất file đa định dạng và tương tác URL Scheme hai chiều.
-                    </div>
+                    <span>➔</span>
                 </div>
             </div>
         </div>
@@ -177,6 +175,63 @@ function openMacModal() {
         if (e.target === modal) {
             modal.classList.add('hidden');
             setTimeout(() => modal.remove(), 300);
+        }
+    });
+
+    const infoPill = modal.querySelector('#infoPillBtn');
+    infoPill.addEventListener('click', () => {
+        modal.remove();
+        openInfoModal();
+    });
+}
+
+function openInfoModal() {
+    let existing = document.getElementById('infoModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'infoModal';
+    modal.className = 'mac-modal-overlay';
+    modal.innerHTML = `
+        <div class="mac-modal-window">
+            <div class="mac-modal-header">
+                <div class="mac-traffic-lights">
+                    <button class="mac-dot red" id="infoCloseBtn"></button>
+                    <button class="mac-dot yellow"></button>
+                    <button class="mac-dot green"></button>
+                </div>
+                <div class="mac-modal-title">Information</div>
+            </div>
+            <div class="mac-modal-body" style="text-align: center; gap: 16px; padding: 30px 20px;">
+                <div style="font-size: 18px; font-weight: 700;">Quick Text Editor Pro</div>
+                <div style="font-size: 13px; color: var(--secondary-text);">v1.0</div>
+                <div style="font-size: 14px; line-height: 1.5; color: var(--text-color); text-align: left; background: var(--pill-bg); padding: 14px; border-radius: 12px; border: 0.5px solid var(--border-color);">
+                    Công cụ soạn thảo văn bản và mã nguồn tối ưu cho iOS Shortcuts. Hỗ trợ tự động lưu, xuất file đa định dạng và tương tác URL Scheme hai chiều.
+                </div>
+                <button id="infoBackBtn" class="export-option" style="border-radius: 12px; margin-top: 10px;">Quay lại</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const closeBtn = modal.querySelector('#infoCloseBtn');
+    const backBtn = modal.querySelector('#infoBackBtn');
+
+    const closeModal = () => {
+        modal.classList.add('hidden');
+        setTimeout(() => modal.remove(), 300);
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    backBtn.addEventListener('click', () => {
+        closeModal();
+        openMacModal();
+    });
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeModal();
         }
     });
 }
