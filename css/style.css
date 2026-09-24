@@ -11,6 +11,8 @@
     --highlight-color: #ff9500;
     --overlay-bg: rgba(0, 0, 0, 0.4);
     --sheet-bg: #f2f2f7;
+    --modal-bg: rgba(255, 255, 255, 0.85);
+    --pill-bg: rgba(255, 255, 255, 0.6);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -27,6 +29,8 @@
         --highlight-color: #ff9f0a;
         --overlay-bg: rgba(0, 0, 0, 0.6);
         --sheet-bg: #1c1c1e;
+        --modal-bg: rgba(30, 30, 32, 0.85);
+        --pill-bg: rgba(44, 44, 46, 0.6);
     }
 }
 
@@ -211,6 +215,127 @@ body {
 
 .export-option:active, .action-sheet-cancel:active { background: var(--btn-active); }
 
+/* --- MACSTYLE INFO MODAL STYLES --- */
+.mac-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--overlay-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.mac-modal-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.mac-modal-window {
+    width: 100%;
+    max-width: 400px;
+    background: var(--modal-bg);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 0.5px solid var(--border-color);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+}
+
+.mac-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 0.5px solid var(--border-color);
+    position: relative;
+}
+
+.mac-traffic-lights {
+    display: flex;
+    gap: 8px;
+}
+
+.mac-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.mac-dot.red { background-color: #ff5f56; border: 0.5px solid #e0443e; }
+.mac-dot.yellow { background-color: #ffbd2e; border: 0.5px solid #dea123; }
+.mac-dot.green { background-color: #27c93f; border: 0.5px solid #1aab29; }
+
+.mac-modal-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.mac-modal-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.pill-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--pill-bg);
+    border: 0.5px solid var(--border-color);
+    border-radius: 16px;
+    padding: 12px 16px;
+    text-decoration: none;
+    color: var(--text-color);
+    transition: transform 0.1s, background-color 0.2s;
+    cursor: pointer;
+}
+
+.pill-card:active {
+    transform: scale(0.97);
+    background: var(--btn-active);
+}
+
+.pill-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 500;
+    font-size: 15px;
+}
+
+.pill-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.pill-info-text {
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--secondary-text);
+}
+
+/* --- SPLASH SCREEN --- */
 .splash-screen {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
