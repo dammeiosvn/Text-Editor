@@ -1,10 +1,3 @@
-/* =========================================
-   Quick Text Editor Pro - Export & Integration
-   Xuất file, Chia sẻ, Tương tác Shortcut (Bản Pro)
-========================================= */
-
-// 1. DANH SÁCH PHÍM TẮT RUỘT LƯU TRÊN CLOUD (GITHUB)
-// Sếp có thể thêm, sửa, xóa tên các phím tắt ở đây. Nó sẽ đồng bộ vĩnh viễn trên mọi thiết bị.
 const MY_SHORTCUTS = [
     "XulyVanBan",
     "Lưu tệp",
@@ -15,16 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const editor = document.getElementById('mainEditor');
     const exportSheet = document.getElementById('exportActionSheet');
 
-    // --- NÚT CÀI ĐẶT (Thông báo cơ chế mới) ---
-    const btnSettings = document.getElementById('btnSettings');
-    if (btnSettings) {
-        btnSettings.addEventListener('click', () => {
-            if (navigator.vibrate) navigator.vibrate(50);
-            alert("⚙️ CẤU HÌNH HỆ THỐNG\n\nDanh sách Phím tắt đích hiện được lưu cứng trên GitHub (file export.js) để đồng bộ vĩnh viễn trên mọi thiết bị của sếp.\n\nSếp hãy vào repo để thêm/sửa tên Phím tắt nhé!");
-        });
-    }
-
-    // --- TẠO MENU CHỌN PHÍM TẮT ĐỘNG ---
     function createShortcutSheet() {
         const existing = document.getElementById('shortcutActionSheet');
         if (existing) existing.remove();
@@ -88,7 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- NÚT GỬI VỀ PHÍM TẮT ---
     const btnReturn = document.getElementById('btnReturn');
     if (btnReturn) {
         btnReturn.addEventListener('click', () => {
@@ -96,7 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- NÚT COPY ---
     const btnCopy = document.getElementById('btnCopy');
     if (btnCopy) {
         btnCopy.addEventListener('click', async () => {
@@ -118,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- NÚT CHIA SẺ ---
     const btnShare = document.getElementById('btnShare');
     if (btnShare) {
         btnShare.addEventListener('click', async () => {
@@ -137,7 +117,41 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- CHỨC NĂNG XUẤT FILE ---
+    function validateTextForExtension(text, ext) {
+        const trimmed = text.trim();
+        if (ext === '.json') {
+            try {
+                JSON.parse(trimmed);
+                return true;
+            } catch (e) {
+                alert(t('invalid_json'));
+                return false;
+            }
+        }
+        if (ext === '.html') {
+            if (!trimmed.toLowerCase().includes('<html') && !trimmed.toLowerCase().includes('<!doctype')) {
+                alert(t('invalid_html'));
+                return false;
+            }
+            return true;
+        }
+        if (ext === '.css') {
+            if (!trimmed.includes('{') || !trimmed.includes('}')) {
+                alert(t('invalid_css'));
+                return false;
+            }
+            return true;
+        }
+        if (ext === '.mobileconfig') {
+            if (!trimmed.includes('plist') && !trimmed.includes('xml')) {
+                alert(t('invalid_config'));
+                return false;
+            }
+            return true;
+        }
+        return true;
+    }
+
     const exportOptions = document.querySelectorAll('.export-option:not(.shortcut-option)');
     exportOptions.forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -145,6 +159,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!ext) return;
 
             exportSheet.classList.add('hidden');
+
+            const text = editor.value;
+            if (!validateTextForExtension(text, ext)) {
+                return;
+            }
 
             let customName = prompt(`Nhập tên file để xuất (không cần gõ đuôi ${ext}):`, "Tai_Lieu_Moi");
             if (customName === null) return;
@@ -154,7 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (customName.endsWith(ext)) customName = customName.slice(0, -ext.length);
 
             const fileName = `${customName}${ext}`;
-            const text = editor.value;
             const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
             
             const a = document.createElement('a');
