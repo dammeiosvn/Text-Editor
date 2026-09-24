@@ -1,0 +1,18 @@
+{
+  "app_title": "Quick Text Editor Pro",
+  "modal_title": "Fast text editing",
+  "author": "Tác giả",
+  "contact": "Liên hệ",
+  "info": "Thông tin",
+  "clear_confirm": "Sếp có chắc chắn muốn xóa toàn bộ văn bản không?",
+  "export_title": "Xuất tệp tin",
+  "export_prompt": "Nhập tên file để xuất (không cần gõ đuôi {ext}):",
+  "shortcut_title": "Bắn dữ liệu sang Phím tắt",
+  "shortcut_custom": "✍️ Nhập tên Phím tắt khác...",
+  "cancel": "Hủy",
+  "close": "Đóng",
+  "invalid_json": "Cảnh báo: Định dạng văn bản không hợp lệ để xuất tệp JSON!",
+  "invalid_html": "Cảnh báo: Định dạng văn bản không hợp lệ để xuất tệp HTML!",
+  "invalid_css": "Cảnh báo: Định dạng văn bản không hợp lệ để xuất tệp CSS!",
+  "invalid_config": "Cảnh báo: Định dạng văn bản không hợp lệ để xuất tệp mobileconfig!"
+}
