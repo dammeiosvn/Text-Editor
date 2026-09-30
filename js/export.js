@@ -1,7 +1,7 @@
 const MY_SHORTCUTS = [
     "Commit",
     "Lưu tệp",
-    "Dich Thuat"
+    "Dịch thuật AI"
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
