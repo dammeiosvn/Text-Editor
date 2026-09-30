@@ -107,14 +107,19 @@
     const theme = raw && (raw.theme === "light" || raw.theme === "dark" || raw.theme === "system") ? raw.theme : "system";
     const fontSize = raw && raw.fontSize >= 16 && raw.fontSize <= 22 ? raw.fontSize : 17;
     const shortcuts = Array.isArray(raw && raw.shortcuts)
-      ? raw.shortcuts.map((s) => String(s).trim()).filter(Boolean).slice(0, 8)
-      : ["Commit", "Lưu tệp", "Dich Thuat"];
+      ? raw.shortcuts
+          .map((s) => String(s).trim())
+          .filter(Boolean)
+          .map((s) => (s === "Dich Thuat" ? "Dịch thuật AI" : s))
+          .filter((s, i, all) => all.indexOf(s) === i)
+          .slice(0, 8)
+      : ["Commit", "Lưu tệp", "Dịch thuật AI"];
     return {
       theme,
       fontSize,
       wrap: !raw || raw.wrap !== false,
       tabSize: raw && raw.tabSize === 2 ? 2 : 4,
-      shortcuts: shortcuts.length ? shortcuts : ["Commit", "Lưu tệp", "Dich Thuat"],
+      shortcuts: shortcuts.length ? shortcuts : ["Commit", "Lưu tệp", "Dịch thuật AI"],
     };
   }
   function loadAll() {
