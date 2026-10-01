@@ -88,8 +88,54 @@
     return t.length > 42 ? `${t.slice(0, 42)}…` : t;
   }
   function fileBase(title) {
-    const cleaned = title.replace(/[\\/:*?"<>|\n\r]+/g, " ").trim().slice(0, 48);
+    const cleaned = String(title || "")
+      .replace(/[\\/:*?"<>|{}\n\r]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 48);
     return cleaned && cleaned !== "Không tiêu đề" ? cleaned : "Tai_Lieu";
+  }
+  function balanced(text, open, close) {
+    let n = 0;
+    let quote = "";
+    let esc = false;
+    for (let i = 0; i < text.length; i += 1) {
+      const c = text[i];
+      if (quote) {
+        if (esc) { esc = false; continue; }
+        if (c === "\\") { esc = true; continue; }
+        if (c === quote) quote = "";
+        continue;
+      }
+      if (c === '"' || c === "'" || c === "`") { quote = c; continue; }
+      if (c === open) n += 1;
+      else if (c === close) {
+        n -= 1;
+        if (n < 0) return false;
+      }
+    }
+    return n === 0 && !quote;
+  }
+  function formatError(ext, text) {
+    const trimmed = String(text ?? "").trim();
+    if (!trimmed) return "Nội dung trống — chưa xuất";
+    if (ext === ".json") {
+      try { JSON.parse(trimmed); return ""; } catch { return "JSON không hợp lệ — chưa xuất"; }
+    }
+    if (ext === ".html") {
+      return /<\/?[a-z][\s\S]*?>/i.test(trimmed) ? "" : "HTML không hợp lệ — chưa xuất";
+    }
+    if (ext === ".css") {
+      return balanced(trimmed, "{", "}") ? "" : "CSS không hợp lệ — chưa xuất";
+    }
+    if (ext === ".js") {
+      const ok = balanced(trimmed, "{", "}") && balanced(trimmed, "(", ")") && balanced(trimmed, "[", "]");
+      return ok ? "" : "JavaScript không hợp lệ — chưa xuất";
+    }
+    if (ext === ".mobileconfig") {
+      return /<\?xml|<plist[\s>]/i.test(trimmed) ? "" : "mobileconfig không hợp lệ — chưa xuất";
+    }
+    return "";
   }
   function takeIncomingText() {
     const url = new URL(window.location.href);
@@ -493,12 +539,14 @@
     }
   }
   async function saveFile(name, mime, text) {
-    const file = new File([text], name, { type: mime });
+    const type = `${mime};charset=utf-8`;
+    const blob = new Blob([text], { type });
+    const file = new File([blob], name, { type, lastModified: Date.now() });
+    // title/text makes iOS Save to Files write a second .txt of the filename
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: name });
+      await navigator.share({ files: [file] });
       return "shared";
     }
-    const blob = new Blob([text], { type: `${mime};charset=utf-8` });
     const href = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = href;
@@ -506,7 +554,7 @@
     document.body.appendChild(a);
     a.click();
     a.remove();
-    URL.revokeObjectURL(href);
+    setTimeout(() => URL.revokeObjectURL(href), 1500);
     return "downloaded";
   }
   async function sendTo(name) {
@@ -769,9 +817,8 @@
     }
     if (act === "pick-ext") {
       const ext = btn.dataset.ext;
-      if (ext === ".json") {
-        try { JSON.parse(area.value.trim()); } catch { toast("JSON không hợp lệ — chưa xuất"); return; }
-      }
+      const bad = formatError(ext, area.value);
+      if (bad) { toast(bad); return; }
       exportExt = ext;
       exportName = fileBase(titleFromBody(area.value));
       renderLayer();
@@ -779,11 +826,15 @@
     }
     if (act === "export-back") { exportExt = null; renderLayer(); return; }
     if (act === "do-export") {
-      let base = (exportName || "Tai_Lieu").trim() || "Tai_Lieu";
-      if (base.endsWith(exportExt)) base = base.slice(0, -exportExt.length);
+      const typed = ($("exportName") && $("exportName").value) || exportName;
+      const bad = formatError(exportExt, area.value);
+      if (bad) { toast(bad); return; }
+      let base = fileBase(typed);
+      if (base.toLowerCase().endsWith(String(exportExt).toLowerCase())) base = base.slice(0, -exportExt.length).trim() || "Tai_Lieu";
       const fileName = `${base}${exportExt}`;
       const mime = (EXPORTS.find((item) => item[0] === exportExt) || ["", "", "text/plain"])[2];
-      saveFile(fileName, mime, area.value).then((mode) => {
+      const body = area.value;
+      saveFile(fileName, mime, body).then((mode) => {
         closePanel();
         exportExt = null;
         toast(mode === "shared" ? "Đã mở bảng chia sẻ" : "Đã tải tệp");
