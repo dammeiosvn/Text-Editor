@@ -517,6 +517,15 @@
 .row-label {
   font-weight: 560;
 }
+button.row-label {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 560;
+  padding: 0;
+  text-align: left;
+}
 
 .row-sub {
   font-size: 12px;
