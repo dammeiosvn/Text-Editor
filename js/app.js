@@ -57,6 +57,8 @@
   let replacement = "";
   let matchIndex = 0;
   let noteQuery = "";
+  let naming = null;
+  let nameDraft = "";
   let exportExt = null;
   let exportName = "";
   let customName = "";
@@ -78,13 +80,17 @@
       return fallback;
     }
   }
-  function makeNote(body) {
-    return { id: uid(), body: body || "", updatedAt: Date.now(), pinned: false, codeMode: false };
+  function makeNote(body, title) {
+    return { id: uid(), body: body || "", title: String(title || "").trim(), updatedAt: Date.now(), pinned: false, codeMode: false };
+  }
+  function noteLabel(note) {
+    const t = String(note && note.title || "").trim();
+    return t || "Không có tiêu đề";
   }
   function titleFromBody(body) {
     const line = String(body || "").split("\n").find((l) => l.trim());
     const t = line ? line.trim() : "";
-    if (!t) return "Không tiêu đề";
+    if (!t) return "Không có tiêu đề";
     return t.length > 42 ? `${t.slice(0, 42)}…` : t;
   }
   function fileBase(title) {
@@ -325,7 +331,7 @@
       `${stats.charsNoSpace} không khoảng trắng`,
     ];
     if (note.codeMode) labels.push(`Dòng ${lc.line} · Cột ${lc.col}`);
-    $("noteTitle").textContent = titleFromBody(note.body);
+    $("noteTitle").textContent = noteLabel(note);
     $("btnStats").textContent = liveSaved ? "Đã lưu" : labels[statMode % labels.length];
     $("btnCode").classList.toggle("is-on", note.codeMode);
     $("btnCode").setAttribute("aria-pressed", note.codeMode ? "true" : "false");
@@ -574,6 +580,31 @@
     location.href = href;
   }
 
+  function createNamedNote(raw) {
+    const current = active();
+    pushSnap(current.id, current.body);
+    const note = makeNote("", raw);
+    data.notes.unshift(note);
+    data.activeId = note.id;
+    naming = null;
+    nameDraft = "";
+    persist();
+    area.value = "";
+    closePanel();
+    paintChrome();
+    setTimeout(() => area.focus(), 40);
+  }
+  function saveNoteName(id, raw) {
+    const note = data.notes.find((n) => n.id === id);
+    if (!note) return;
+    note.title = String(raw || "").trim();
+    note.updatedAt = Date.now();
+    naming = null;
+    nameDraft = "";
+    persist();
+    paintChrome();
+    renderLayer();
+  }
   function sheet(title, body) {
     return `<div class="overlay"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="sheet-head"><h2 class="sheet-title">${esc(title)}</h2></div><div class="can-scroll">${body}</div></div><button type="button" class="sheet-cancel" data-act="close">Hủy</button></div>`;
   }
@@ -591,9 +622,17 @@
     }
     if (panel === "notes") {
       const q = noteQuery.trim().toLocaleLowerCase("vi");
-      const items = sortNotes(data.notes).filter((n) => !q || titleFromBody(n.body).toLocaleLowerCase("vi").includes(q) || n.body.toLocaleLowerCase("vi").includes(q));
-      const list = items.map((n) => `<div class="note-row${n.id === data.activeId ? " is-active" : ""}"><button type="button" class="note-open" data-act="open-note" data-id="${esc(n.id)}"><span class="row-label">${esc(titleFromBody(n.body))}</span><span class="row-sub">${esc(formatWhen(n.updatedAt))} · ${countStats(n.body).words} từ</span></button><div class="note-actions"><button type="button" class="icon-btn mini${n.pinned ? " is-on" : ""}" data-act="pin" data-id="${esc(n.id)}" aria-label="Ghim">${ICON.pin}</button><button type="button" class="icon-btn mini danger" data-act="delete-note" data-id="${esc(n.id)}" aria-label="Xóa ghi chú">${ICON.trash}</button></div></div>`).join("");
-      layer.innerHTML = sheet("Ghi chú", `<div class="search-wrap"><input id="noteQuery" class="field" placeholder="Lọc ghi chú" aria-label="Lọc ghi chú" value="${esc(noteQuery)}"></div><div class="group"><button type="button" class="row-btn accent" data-act="new-note"><span class="row-main">${ICON.plus} Ghi chú mới</span></button>${list || '<div class="empty-hint">Không có ghi chú khớp.</div>'}</div>`);
+      const items = sortNotes(data.notes).filter((n) => !q || noteLabel(n).toLocaleLowerCase("vi").includes(q) || n.body.toLocaleLowerCase("vi").includes(q));
+      const list = items.map((n) => {
+        if (naming === n.id) {
+          return `<div class="note-row is-active"><div class="pad"><input id="noteName" class="field" placeholder="Không có tiêu đề" aria-label="Tên ghi chú" value="${esc(nameDraft)}"><button type="button" class="text-btn accent" data-act="save-name" data-id="${esc(n.id)}">Lưu tên</button></div></div>`;
+        }
+        return `<div class="note-row${n.id === data.activeId ? " is-active" : ""}"><button type="button" class="note-open" data-act="rename-note" data-id="${esc(n.id)}"><span class="row-label">${esc(noteLabel(n))}</span></button><button type="button" class="note-open" data-act="open-note" data-id="${esc(n.id)}"><span class="row-sub">${esc(formatWhen(n.updatedAt))} · ${countStats(n.body).words} từ</span></button><div class="note-actions"><button type="button" class="icon-btn mini" data-act="rename-note" data-id="${esc(n.id)}" aria-label="Đổi tên">${ICON.braces}</button><button type="button" class="icon-btn mini${n.pinned ? " is-on" : ""}" data-act="pin" data-id="${esc(n.id)}" aria-label="Ghim">${ICON.pin}</button><button type="button" class="icon-btn mini danger" data-act="delete-note" data-id="${esc(n.id)}" aria-label="Xóa ghi chú">${ICON.trash}</button></div></div>`;
+      }).join("");
+      const create = naming === "new"
+        ? `<div class="pad"><label class="setting-label" for="noteName">Tên ghi chú</label><input id="noteName" class="field" placeholder="Không có tiêu đề" aria-label="Tên ghi chú" value="${esc(nameDraft)}"><button type="button" class="text-btn accent" data-act="save-new">Tạo</button></div>`
+        : `<button type="button" class="row-btn accent" data-act="new-note"><span class="row-main">${ICON.plus} Ghi chú mới</span></button>`;
+      layer.innerHTML = sheet("Ghi chú", `<div class="search-wrap"><input id="noteQuery" class="field" placeholder="Lọc ghi chú" aria-label="Lọc ghi chú" value="${esc(noteQuery)}"></div><div class="group">${create}${list || '<div class="empty-hint">Không có ghi chú khớp.</div>'}</div>`);
       const input = $("noteQuery");
       if (input) {
         input.addEventListener("input", () => {
@@ -603,6 +642,17 @@
           const again = $("noteQuery");
           if (again) { again.focus(); again.setSelectionRange(pos, pos); }
         });
+      }
+      const nameInput = $("noteName");
+      if (nameInput) {
+        nameInput.addEventListener("input", () => { nameDraft = nameInput.value; });
+        nameInput.addEventListener("keydown", (e) => {
+          if (e.key !== "Enter") return;
+          e.preventDefault();
+          if (naming === "new") createNamedNote(nameInput.value);
+          else saveNoteName(naming, nameInput.value);
+        });
+        setTimeout(() => nameInput.focus(), 40);
       }
       return;
     }
@@ -724,16 +774,24 @@
       return;
     }
     if (act === "new-note") {
-      const current = active();
-      pushSnap(current.id, current.body);
-      const note = makeNote("");
-      data.notes.unshift(note);
-      data.activeId = note.id;
-      persist();
-      area.value = "";
-      closePanel();
-      paintChrome();
-      setTimeout(() => area.focus(), 40);
+      naming = "new";
+      nameDraft = "";
+      renderLayer();
+      return;
+    }
+    if (act === "rename-note") {
+      const note = data.notes.find((n) => n.id === btn.dataset.id);
+      naming = btn.dataset.id;
+      nameDraft = note && note.title ? note.title : "";
+      renderLayer();
+      return;
+    }
+    if (act === "save-new") {
+      createNamedNote(($("noteName") && $("noteName").value) || nameDraft);
+      return;
+    }
+    if (act === "save-name") {
+      saveNoteName(btn.dataset.id, ($("noteName") && $("noteName").value) || nameDraft);
       return;
     }
     if (act === "pin") {
@@ -748,7 +806,7 @@
       const note = data.notes.find((n) => n.id === id);
       ask({
         title: "Xóa ghi chú",
-        message: `Xóa “${titleFromBody(note ? note.body : "")}”?`,
+        message: `Xóa “${noteLabel(note)}”?`,
         confirm: "Xóa",
         danger: true,
         run: () => {
@@ -782,7 +840,7 @@
     if (act === "find") { closePanel(); findOpen = true; paintChrome(); $("findQuery").focus(); return; }
     if (act === "dup") {
       const note = active();
-      const copy = makeNote(note.body);
+      const copy = makeNote(note.body, note.title);
       copy.codeMode = note.codeMode;
       data.notes.unshift(copy);
       data.activeId = copy.id;
@@ -820,7 +878,7 @@
       const bad = formatError(ext, area.value);
       if (bad) { toast(bad); return; }
       exportExt = ext;
-      exportName = fileBase(titleFromBody(area.value));
+      exportName = fileBase(noteLabel(active()));
       renderLayer();
       return;
     }
@@ -892,7 +950,7 @@
   }
 
   $("btnSettings").addEventListener("click", () => openPanel("settings"));
-  $("btnNotes").addEventListener("click", () => openPanel("notes"));
+  $("btnNotes").addEventListener("click", () => { naming = null; nameDraft = ""; openPanel("notes"); });
   $("btnStats").addEventListener("click", () => { statMode += 1; paintChrome(); });
   $("btnCode").addEventListener("click", () => {
     const note = active();
