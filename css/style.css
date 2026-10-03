@@ -1,3 +1,4 @@
+html, body { touch-action: manipulation; }
 :root {
   --color-bg: #f2f2f7;
   --color-bar: #f2f2f7;
