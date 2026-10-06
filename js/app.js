@@ -50,7 +50,7 @@
   let liveSaved = false;
   let savedTimer = 0;
   let toastTimer = 0;
-  let snapTimer = 0;
+  let snapTimer, saveTimer = 0;
   let copied = false;
   let findOpen = false;
   let query = "";
@@ -294,11 +294,22 @@
       savedTimer = setTimeout(() => { liveSaved = false; paintChrome(); }, 1000);
     }, 450);
   }
+  function longToken(body) {
+    return /\S{80,}/.test(body || "");
+  }
+  function tuneInput(body) {
+    const heavy = longToken(body);
+    area.spellcheck = !heavy && !active().codeMode;
+    area.autocorrect = heavy || active().codeMode ? "off" : "on";
+    area.autocapitalize = heavy || active().codeMode ? "off" : "sentences";
+  }
   function updateBody(body) {
     const note = active();
     note.body = body;
     note.updatedAt = Date.now();
-    if (!persist()) toast("Không lưu được — bộ nhớ máy đầy");
+    tuneInput(body);
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => { if (!persist()) toast("Không lưu được — bộ nhớ máy đầy"); }, 250);
     markSaved();
     scheduleSnap();
     paintChrome();
@@ -1017,7 +1028,8 @@
   $("btnUndo").addEventListener("click", () => { area.focus(); document.execCommand("undo"); updateBody(area.value); syncCaret(); });
   $("btnRedo").addEventListener("click", () => { area.focus(); document.execCommand("redo"); updateBody(area.value); syncCaret(); });
 
-  area.addEventListener("input", () => { updateBody(area.value); syncCaret(); });
+  area.addEventListener("input", () => { updateBody(area.value); caret = { start: area.selectionStart, end: area.selectionEnd }; });
+  area.addEventListener("paste", () => { tuneInput(area.value); });
   area.addEventListener("keyup", syncCaret);
   area.addEventListener("click", syncCaret);
   area.addEventListener("select", syncCaret);
@@ -1045,6 +1057,7 @@
   persist();
   bootIcons();
   area.value = active().body;
+  tuneInput(area.value);
   applyTheme();
   paintChrome();
   if (data.fromLink) toast("Đã nhận văn bản từ liên kết");

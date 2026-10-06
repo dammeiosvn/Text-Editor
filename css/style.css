@@ -301,7 +301,8 @@ html, body { touch-action: manipulation; }
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   white-space: pre-wrap;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .ed-input.mono {
@@ -347,6 +348,12 @@ html, body { touch-action: manipulation; }
   background: var(--color-press);
 }
 
+.ed-toolbar, .sym-bar {
+  position: relative;
+  z-index: 5;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
 .ed-toolbar {
   flex: none;
   display: flex;
