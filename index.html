@@ -14,7 +14,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon/app-icon.png">
-  <link rel="stylesheet" href="css/style.css?v=1.1.1">
+  <link rel="stylesheet" href="css/style.css?v=1.2.0">
   <style>
     html,body{margin:0;background:#f2f2f7;height:100%;overflow:hidden}
     @media (prefers-color-scheme: dark){html,body{background:#000}}
@@ -45,19 +45,25 @@
         var meta = document.querySelector('meta[name="theme-color"]');
         if (meta) meta.setAttribute("content", bg);
       }
+      var syncFrame = 0;
       function sync() {
+        if (syncFrame) return;
+        syncFrame = requestAnimationFrame(function () { syncFrame = 0; syncViewport(); });
+      }
+      function syncViewport() {
         var vv = window.visualViewport;
         var h = window.innerHeight || 0;
         var top = 0;
         if (vv) { h = vv.height; top = vv.offsetTop || 0; }
         if (!h || h < 1) return;
         var root = document.documentElement;
-        root.style.setProperty("--app-h", Math.round(h) + "px");
-        root.style.setProperty("--app-top", Math.round(top) + "px");
+        var height = Math.round(h) + "px", offset = Math.round(top) + "px";
+        if (root.style.getPropertyValue("--app-h") !== height) root.style.setProperty("--app-h", height);
+        if (root.style.getPropertyValue("--app-top") !== offset) root.style.setProperty("--app-top", offset);
         if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
       }
       applyTheme();
-      sync();
+      syncViewport();
       window.addEventListener("resize", sync);
       window.addEventListener("orientationchange", function () { setTimeout(sync, 60); setTimeout(sync, 280); });
       window.addEventListener("pageshow", function () { applyTheme(); sync(); });
@@ -112,7 +118,7 @@
       </div>
     </div>
     <main class="ed-main">
-      <textarea id="mainEditor" class="ed-input" spellcheck="true" placeholder="Nhập văn bản hoặc code tại đây…"></textarea>
+      <textarea aria-label="Nội dung ghi chú" id="mainEditor" class="ed-input" spellcheck="true" placeholder="Nhập văn bản hoặc code tại đây…"></textarea>
     </main>
     <div id="symBar" class="sym-bar" hidden>
       <button type="button" class="sym-btn" data-insert="tab">Tab</button>
@@ -132,6 +138,7 @@
     </footer>
     <div id="layer"></div>
   </div>
-  <script src="js/app.js?v=1.1.1"></script>
+  <script src="js/storage.js?v=1.2.0"></script>
+  <script src="js/app.js?v=1.2.0"></script>
 </body>
 </html>
