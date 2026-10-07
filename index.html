@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
-  <title>Quick Text Editor Pro</title>
+  <title data-i18n="app_title">Quick Text Editor Pro</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,7 +14,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon/app-icon.png">
-  <link rel="stylesheet" href="css/style.css?v=1.2.0">
+  <link rel="stylesheet" href="css/style.css?v=1.2.1">
   <style>
     html,body{margin:0;background:#f2f2f7;height:100%;overflow:hidden}
     @media (prefers-color-scheme: dark){html,body{background:#000}}
@@ -93,32 +93,32 @@
   <div id="app">
     <div id="toast" class="toast" hidden></div>
     <header class="ed-header">
-      <button type="button" id="btnSettings" class="icon-btn" aria-label="Cài đặt"></button>
+      <button type="button" id="btnSettings" class="icon-btn" aria-label="Cài đặt" data-i18n-aria-label="modal_title"></button>
       <div class="ed-center">
         <button type="button" id="btnNotes" class="title-btn">
-          <span id="noteTitle" class="ed-title">Không tiêu đề</span>
+          <span id="noteTitle" class="ed-title" data-i18n="untitled">Không tiêu đề</span>
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <button type="button" id="btnStats" class="stats-btn">0 ký tự · 0 từ</button>
+        <button type="button" id="btnStats" class="stats-btn" data-i18n="stats_chars_words">0 ký tự · 0 từ</button>
       </div>
-      <button type="button" id="btnCode" class="icon-btn" aria-label="Chế độ code" aria-pressed="false"></button>
+      <button type="button" id="btnCode" class="icon-btn" aria-label="Chế độ code" aria-pressed="false" data-i18n-aria-label="code_mode"></button>
     </header>
     <div id="findBar" class="find-bar" hidden>
       <div class="find-row">
-        <input id="findQuery" class="field" placeholder="Tìm trong ghi chú" aria-label="Tìm" autocomplete="off">
+        <input id="findQuery" class="field" placeholder="Tìm trong ghi chú" aria-label="Tìm" autocomplete="off" data-i18n-aria-label="find_query" data-i18n-placeholder="find_placeholder">
         <span id="findCount" class="find-count"></span>
-        <button type="button" id="findPrev" class="icon-btn" aria-label="Trước"></button>
-        <button type="button" id="findNext" class="icon-btn" aria-label="Sau"></button>
-        <button type="button" id="findClose" class="icon-btn" aria-label="Đóng tìm"></button>
+        <button type="button" id="findPrev" class="icon-btn" aria-label="Trước" data-i18n-aria-label="find_prev"></button>
+        <button type="button" id="findNext" class="icon-btn" aria-label="Sau" data-i18n-aria-label="find_next"></button>
+        <button type="button" id="findClose" class="icon-btn" aria-label="Đóng tìm" data-i18n-aria-label="find_close"></button>
       </div>
       <div class="find-row">
-        <input id="findReplace" class="field" placeholder="Thay bằng" aria-label="Thay thế" autocomplete="off">
-        <button type="button" id="replaceOne" class="sym-btn">Thay</button>
-        <button type="button" id="replaceAll" class="sym-btn">Tất cả</button>
+        <input id="findReplace" class="field" placeholder="Thay bằng" aria-label="Thay thế" autocomplete="off" data-i18n-aria-label="replace_label" data-i18n-placeholder="replace_placeholder">
+        <button type="button" id="replaceOne" class="sym-btn" data-i18n="replace_one">Thay</button>
+        <button type="button" id="replaceAll" class="sym-btn" data-i18n="replace_all">Tất cả</button>
       </div>
     </div>
     <main class="ed-main">
-      <textarea aria-label="Nội dung ghi chú" id="mainEditor" class="ed-input" spellcheck="true" placeholder="Nhập văn bản hoặc code tại đây…"></textarea>
+      <textarea aria-label="Nội dung ghi chú" id="mainEditor" class="ed-input" spellcheck="true" placeholder="Nhập văn bản hoặc code tại đây…" data-i18n-aria-label="editor_label" data-i18n-placeholder="editor_placeholder"></textarea>
     </main>
     <div id="symBar" class="sym-bar" hidden>
       <button type="button" class="sym-btn" data-insert="tab">Tab</button>
@@ -126,19 +126,21 @@
       <button type="button" class="sym-btn" data-insert="{}"> { } </button>
       <button type="button" class="sym-btn" data-insert="[]"> [ ] </button>
       <button type="button" class="sym-btn" data-insert='""'> "" </button>
-      <button type="button" id="btnUndo" class="sym-btn" aria-label="Hoàn tác"></button>
-      <button type="button" id="btnRedo" class="sym-btn" aria-label="Làm lại"></button>
+      <button type="button" id="btnUndo" class="sym-btn" aria-label="Hoàn tác" data-i18n-aria-label="undo"></button>
+      <button type="button" id="btnRedo" class="sym-btn" aria-label="Làm lại" data-i18n-aria-label="redo"></button>
     </div>
     <footer class="ed-toolbar">
-      <button type="button" id="btnClear" class="icon-btn danger" aria-label="Xóa nội dung"></button>
-      <button type="button" id="btnCopy" class="icon-btn" aria-label="Sao chép"></button>
-      <button type="button" id="btnTools" class="icon-btn" aria-label="Công cụ"></button>
-      <button type="button" id="btnExport" class="icon-btn accent" aria-label="Xuất tệp"></button>
-      <button type="button" id="btnSend" class="icon-btn" aria-label="Gửi sang Phím tắt"></button>
+      <button type="button" id="btnClear" class="icon-btn danger" aria-label="Xóa nội dung" data-i18n-aria-label="clear_title"></button>
+      <button type="button" id="btnCopy" class="icon-btn" aria-label="Sao chép" data-i18n-aria-label="copy"></button>
+      <button type="button" id="btnTools" class="icon-btn" aria-label="Công cụ" data-i18n-aria-label="tools_title"></button>
+      <button type="button" id="btnExport" class="icon-btn accent" aria-label="Xuất tệp" data-i18n-aria-label="export_title"></button>
+      <button type="button" id="btnSend" class="icon-btn" aria-label="Gửi sang Phím tắt" data-i18n-aria-label="shortcut_title"></button>
     </footer>
     <div id="layer"></div>
   </div>
-  <script src="js/storage.js?v=1.2.0"></script>
-  <script src="js/app.js?v=1.2.0"></script>
+  <script src="js/vi-VN.js?v=1.2.1"></script>
+  <script src="js/i18n.js?v=1.2.1"></script>
+  <script src="js/storage.js?v=1.2.1"></script>
+  <script src="js/app.js?v=1.2.1"></script>
 </body>
 </html>

@@ -12,7 +12,15 @@ https://dammeiosvn.github.io/Text-Editor/?text=Nội%20dung
 
 Cũng nhận `?input=` và `?content=`.
 
-Gửi ngược lại bằng nút máy bay. Văn bản dài được copy vào Clipboard rồi mở Phím tắt, không nhét hết vào URL.
+Gửi ngược lại bằng nút máy bay. App truyền toàn bộ nội dung trực tiếp vào Phím tắt:
+
+```text
+shortcuts://run-shortcut?name=Tên_Phím_Tắt&input=text&text=Văn_bản_đã_mã_hóa_URL
+```
+
+Trong Phím tắt, dùng biến **Đầu vào phím tắt** (Shortcut Input) dưới dạng **Văn bản** để xử lý hoặc đóng gói/lưu tệp. Tên và nội dung được mã hóa URL riêng; không dùng Clipboard, không cắt nội dung dài.
+
+[Định dạng URL theo tài liệu Apple](https://support.apple.com/guide/shortcuts/apd624386f42/ios).
 
 ## Bản 1.2.0
 
@@ -34,3 +42,16 @@ npm test
 
 Có thể dùng Chromium có sẵn qua `PLAYWRIGHT_EXECUTABLE_PATH=/đường/dẫn/chromium npm test`.
 Xem [AUDIT.md](AUDIT.md) để biết lỗi đã tái hiện, phép đo và giới hạn kiểm tra.
+
+## Bản 1.2.1 — Ngôn ngữ và Phím tắt
+
+`Language/vi-VN.json` là nguồn chuỗi giao diện tiếng Việt: 132 key, gồm nhãn, placeholder, aria-label, thống kê có tham số, popup và thông báo lỗi. `en-GB.json` có cùng key và placeholder; ứng dụng hiện vẫn dùng tiếng Việt.
+
+Giao diện đọc JSON khi khởi động. `js/vi-VN.js` là bản dự phòng được sinh từ JSON để giao diện vẫn mở được khi tải JSON lỗi. Khi sửa tệp tiếng Việt, chạy:
+
+```sh
+npm run build:language
+npm test
+```
+
+Các test phát hiện key thiếu, placeholder không khớp và bản dự phòng chưa cập nhật. Luồng Phím tắt luôn dùng `input=text`; nút Sao chép riêng vẫn giữ chức năng sao chép.

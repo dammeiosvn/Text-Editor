@@ -197,16 +197,58 @@ test('failed migration preserves localStorage; visibility flush saves without wa
   assert.equal((await stored()).notes[0].body, 'Chuyển ứng dụng');
 });
 
-test('long Shortcut text refuses navigation when clipboard fails', async () => {
-  await fresh(); await page.locator('#mainEditor').fill('a'.repeat(3000));
+test('preset/custom/Enter Shortcut routes send full URL-encoded text without clipboard', async () => {
+  await fresh();
+  // Capture only the OS navigation boundary; production logic builds the real URL.
+  await page.route('**/js/app.js*', route => route.fulfill({
+    contentType: 'application/javascript',
+    body: fs.readFileSync(path.join(root, 'js/app.js'), 'utf8').replace('location.href = href;', 'window.capturedShortcutURL = href;'),
+  }));
+  await boot();
   await page.evaluate(() => {
-    Object.defineProperty(navigator, 'clipboard', { configurable:true, value:{writeText:async()=>{throw new Error('denied');}} });
-    const exec = document.execCommand.bind(document);
-    document.execCommand = (command, ...args) => command === 'copy' ? false : exec(command, ...args);
+    window.clipboardWrites = 0;
+    Object.defineProperty(navigator, 'clipboard', { configurable:true, value:{writeText:async()=>{window.clipboardWrites++;throw new Error('denied');}} });
   });
-  const url = page.url(); await page.locator('#btnSend').click(); await page.locator('[data-act="send"]').first().click();
-  assert.match(await page.locator('#toast').textContent(), /Chưa mở Phím tắt/);
-  assert.equal(page.url(), url); await page.keyboard.press('Escape');
+  for (const [name, text, route] of [
+    ['Commit', 'Sếp & + # ? % 👋\n<plist>"nội dung"</plist>', 'preset'],
+    ['Lưu cấu hình & tiếng Việt 👋', 'Dài & + % # 🎉\n'.repeat(2000), 'custom'],
+    ['Phím tắt bằng Enter', 'Đầu vào\nDòng hai', 'enter'],
+  ]) {
+    await page.locator('#mainEditor').fill(text); await page.locator('#btnSend').click();
+    if (route === 'preset') await page.locator('[data-act="send"][data-name="Commit"]').click();
+    else {
+      await page.locator('#customName').fill(name);
+      if (route === 'enter') await page.locator('#customName').press('Enter');
+      else await page.locator('[data-act="send-custom"]').click();
+    }
+    const url = new URL(await page.evaluate(() => window.capturedShortcutURL));
+    assert.equal(url.protocol, 'shortcuts:'); assert.equal(url.hostname, 'run-shortcut');
+    assert.equal(url.searchParams.get('input'), 'text'); assert.equal(url.searchParams.get('name'), name);
+    assert.equal(url.searchParams.get('text'), text); assert.equal(await page.evaluate(() => clipboardWrites), 0);
+    assert.equal(await page.locator('#mainEditor').inputValue(), text);
+  }
+  await page.locator('#btnSend').click(); await page.locator('#customName').fill('   '); await page.locator('[data-act="send-custom"]').click();
+  assert.match(await page.locator('#toast').textContent(), /Nhập tên Phím tắt/);
+  await page.keyboard.press('Escape'); await page.unroute('**/js/app.js*');
+});
+
+test('JSON translations drive static/dynamic UI and fall back safely when fetch fails', async () => {
+  await fresh();
+  const vi = JSON.parse(fs.readFileSync(path.join(root, 'Language/vi-VN.json'), 'utf8'));
+  await page.route('**/Language/vi-VN.json*', route => route.fulfill({
+    contentType:'application/json', body:JSON.stringify({...vi, editor_placeholder:'Nội dung thử', notes_title:'Danh sách thử', note_new:'<b>Ghi chú thử</b>', tool_upper:'Viết hoa thử'}),
+  }));
+  await boot(); assert.equal(await page.locator('#mainEditor').getAttribute('placeholder'), 'Nội dung thử');
+  await page.locator('#btnNotes').click(); assert.equal(await page.locator('.sheet-title').textContent(), 'Danh sách thử');
+  assert.match(await page.locator('[data-act="new-note"]').textContent(), /<b>Ghi chú thử<\/b>/);
+  assert.equal(await page.locator('[data-act="new-note"] b').count(), 0);
+  await page.keyboard.press('Escape'); await page.locator('#btnTools').click();
+  assert.equal(await page.locator('[data-act="upper"]').textContent(), 'Viết hoa thử');
+  await page.keyboard.press('Escape'); await page.unroute('**/Language/vi-VN.json*');
+  await page.route('**/Language/vi-VN.json*', route => route.abort());
+  await boot(); assert.equal(await page.locator('#mainEditor').getAttribute('placeholder'), vi.editor_placeholder);
+  await page.locator('#btnNotes').click(); assert.equal(await page.locator('.sheet-title').textContent(), vi.notes_title);
+  await page.keyboard.press('Escape'); await page.unroute('**/Language/vi-VN.json*');
 });
 
 test('large notes: input and caret callbacks stay cheap; heavy text disables spellcheck; IDB reload retains > localStorage quota', async () => {

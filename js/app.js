@@ -1,5 +1,6 @@
-/* Quick Text Editor Pro 1.2 — static build for GitHub Pages */
+/* Quick Text Editor Pro 1.2.1 — static build for GitHub Pages */
 (function () {
+  const t = (key, params) => QTEI18n.t(key, params);
   const NOTES_KEY = "qte.notes.v1";
   const SETTINGS_KEY = "qte.settings.v1";
   const ACTIVE_KEY = "qte.active.v1";
@@ -7,13 +8,13 @@
   const LEGACY_KEY = "quickEditorText";
   const FONT_STEPS = [16, 17, 18, 20, 22];
   const EXPORTS = [
-    [".txt", "Văn bản thuần", "text/plain"],
-    [".md", "Markdown", "text/markdown"],
-    [".json", "Dữ liệu JSON", "application/json"],
-    [".html", "Mã HTML", "text/html"],
-    [".css", "Định dạng CSS", "text/css"],
-    [".js", "JavaScript", "text/javascript"],
-    [".mobileconfig", "Apple Config", "application/x-apple-aspen-config"],
+    [".txt", "export_plain", "text/plain"],
+    [".md", "export_markdown", "text/markdown"],
+    [".json", "export_json", "application/json"],
+    [".html", "export_html", "text/html"],
+    [".css", "export_css", "text/css"],
+    [".js", "export_js", "text/javascript"],
+    [".mobileconfig", "export_config", "application/x-apple-aspen-config"],
   ];
   const PAIRS = { "(": ")", "[": "]", "{": "}", '"': '"', "'": "'", "`": "`" };
   const CLOSERS = new Set([")", "]", "}", '"', "'", "`"]);
@@ -98,14 +99,14 @@
     return { id: uid(), body: body || "", title: String(title || "").trim(), updatedAt: Date.now(), pinned: false, codeMode: false };
   }
   function noteLabel(note) {
-    const t = String(note && note.title || "").trim();
-    return t || "Không có tiêu đề";
+    const title = String(note && note.title || "").trim();
+    return title || t("untitled");
   }
   function titleFromBody(body) {
     const line = String(body || "").split("\n").find((l) => l.trim());
-    const t = line ? line.trim() : "";
-    if (!t) return "Không có tiêu đề";
-    return t.length > 42 ? `${t.slice(0, 42)}…` : t;
+    const title = line ? line.trim() : "";
+    if (!title) return t("untitled");
+    return title.length > 42 ? `${title.slice(0, 42)}…` : title;
   }
   function fileBase(title) {
     const cleaned = String(title || "")
@@ -113,18 +114,18 @@
       .replace(/\s+/g, " ")
       .trim()
       .slice(0, 48);
-    return cleaned && cleaned !== "Không tiêu đề" ? cleaned : "Tai_Lieu";
+    return cleaned && cleaned !== "Không tiêu đề" && cleaned !== t("untitled") ? cleaned : "Tai_Lieu";
   }
   function formatError(ext, text) {
     const trimmed = String(text ?? "").trim();
-    if (!trimmed) return "Nội dung trống — chưa xuất";
+    if (!trimmed) return t("export_empty");
     if (ext === ".json") {
-      try { JSON.parse(trimmed); return ""; } catch { return "JSON không hợp lệ — chưa xuất"; }
+      try { JSON.parse(trimmed); return ""; } catch { return t("invalid_json"); }
     }
     if (ext === ".mobileconfig") {
       const xml = new DOMParser().parseFromString(trimmed, "application/xml");
       return xml.querySelector("parsererror") || xml.documentElement.tagName !== "plist"
-        ? "mobileconfig không phải XML plist hợp lệ — chưa xuất" : "";
+        ? t("invalid_config") : "";
     }
     return "";
   }
@@ -133,7 +134,7 @@
     let text = url.searchParams.get("text") ?? url.searchParams.get("input") ?? url.searchParams.get("content");
     if ((text == null || text === "") && url.hash.startsWith("#text=")) {
       try { text = decodeURIComponent(url.hash.slice(6)); }
-      catch { toast("Liên kết chứa mã văn bản không hợp lệ"); return null; }
+      catch { toast(t("incoming_invalid")); return null; }
     }
     if (text == null || text === "") return null;
     url.searchParams.delete("text");
@@ -165,7 +166,7 @@
   async function loadAll() {
     let stored = null;
     try { stored = await QTEStorage.load(); storageReady = true; }
-    catch { toast("Không mở được kho lưu. Nội dung đang sửa chưa được lưu; hãy xuất tệp."); }
+    catch { toast(t("storage_open_failed")); }
     const settings = sanitizeSettings(stored?.settings || readJSON(SETTINGS_KEY, {}));
     let notes = stored?.notes || readJSON(NOTES_KEY, []);
     if (!Array.isArray(notes)) notes = [];
@@ -196,7 +197,7 @@
     const savedRevision = revision;
     const savedSequence = ++saveSequence;
     try {
-      if (!storageReady) throw new Error("Kho lưu chưa sẵn sàng");
+      if (!storageReady) throw new Error(t("storage_not_ready"));
       await QTEStorage.save(data);
       // Small theme settings support the first paint before IndexedDB opens.
       try {
@@ -212,7 +213,7 @@
       saveFailed = true;
       liveSaved = false;
       clearTimeout(savedTimer);
-      toast("Không lưu được. Hãy xuất tệp để giữ nội dung.");
+      toast(t("storage_save_failed"));
       paintChrome();
       return false;
     }
@@ -253,8 +254,8 @@
       if (!space) { charsNoSpace += 1; if (!inWord) words += 1; }
       inWord = !space;
     }
-    const reading = words === 0 ? "0 phút đọc" : `${Math.max(1, Math.round(words / 220))} phút đọc`;
-    return { chars: text.length, charsNoSpace, words, lines, reading };
+    const readingMinutes = words === 0 ? 0 : Math.max(1, Math.round(words / 220));
+    return { chars: text.length, charsNoSpace, words, lines, readingMinutes };
   }
   function cachedStats(note) {
     const cached = noteStats.get(note.id);
@@ -278,7 +279,7 @@
     paintChrome();
   }
   try {
-    statsWorker = new Worker("js/stats-worker.js?v=1.2.0");
+    statsWorker = new Worker("js/stats-worker.js?v=1.2.1");
     statsWorker.onmessage = ({ data: result }) => {
       if (!data || result.job !== statsJob || result.noteId !== active().id || result.chars !== active().body.length) return;
       statsBody = active().body;
@@ -405,16 +406,16 @@
     const selected = Math.abs(caret.end - caret.start);
 
     const labels = [
-      selected ? `Chọn ${selected} · ${stats.words} từ` : `${stats.chars} ký tự · ${stats.words} từ`,
-      `${stats.lines} dòng · ${stats.reading}`,
-      `${stats.charsNoSpace} không khoảng trắng`,
+      selected ? t("stats_selection", { selected, words: stats.words }) : t("stats_chars_words", { chars: stats.chars, words: stats.words }),
+      t("stats_lines_reading", { lines: stats.lines, reading: t("stats_reading", { count: stats.readingMinutes }) }),
+      t("stats_no_space", { count: stats.charsNoSpace }),
     ];
     if (note.codeMode && statMode % 4 === 3) {
       const lc = lineCol(note.body, caret.start);
-      labels.push(`Dòng ${lc.line} · Cột ${lc.col}`);
+      labels.push(t("stats_line_column", lc));
     } else if (note.codeMode) labels.push("");
     textIfChanged("noteTitle", noteLabel(note));
-    textIfChanged("btnStats", saveFailed ? "Chưa lưu" : liveSaved ? "Đã lưu" : labels[statMode % labels.length]);
+    textIfChanged("btnStats", saveFailed ? t("unsaved") : liveSaved ? t("saved") : labels[statMode % labels.length]);
     $("btnCode").classList.toggle("is-on", note.codeMode);
     $("btnCode").setAttribute("aria-pressed", note.codeMode ? "true" : "false");
     $("symBar").hidden = !note.codeMode;
@@ -555,7 +556,7 @@
       replaceRange(0, area.value.length, region.value, region.selStart, region.selEnd);
       closePanel();
     } catch (error) {
-      toast(error && error.message ? error.message : "Không xử lý được");
+      toast(error && error.message ? error.message : t("processing_failed"));
     }
   }
   function formatJson(pretty) {
@@ -567,7 +568,7 @@
     const chunk = has ? area.value.slice(from, to) : area.value.trim();
     let text;
     try { text = JSON.stringify(JSON.parse(chunk), null, pretty ? 2 : 0); }
-    catch { toast("JSON không hợp lệ"); return; }
+    catch { toast(t("json_invalid")); return; }
     rememberSnap();
     if (!has) replaceRange(0, area.value.length, text, 0, text.length);
     else replaceRange(0, area.value.length, area.value.slice(0, from) + text + area.value.slice(to), from, from + text.length);
@@ -649,21 +650,15 @@
     setTimeout(() => URL.revokeObjectURL(href), 1500);
     return "downloaded";
   }
-  async function sendTo(name) {
-    const target = name.trim();
-    if (!target) return;
-    const text = area.value;
-    const copyOK = await copyText(text);
-    const encodedName = encodeURIComponent(target);
-    const encodedText = encodeURIComponent(text);
-    const long = encodedText.length > 1800;
-    if (long && !copyOK) { toast("Không copy được văn bản dài. Chưa mở Phím tắt."); return; }
-    const href = long
-      ? `shortcuts://run-shortcut?name=${encodedName}`
-      : `shortcuts://run-shortcut?name=${encodedName}&input=text&text=${encodedText}`;
+  function sendTo(name) {
+    const target = String(name || "").trim();
+    if (!target) { toast(t("shortcut_name_empty")); return; }
+    let href;
+    try {
+      href = `shortcuts://run-shortcut?name=${encodeURIComponent(target)}&input=text&text=${encodeURIComponent(area.value)}`;
+    } catch { toast(t("shortcut_send_failed")); return; }
     if (navigator.vibrate) navigator.vibrate(20);
     closePanel();
-    if (long) toast("Văn bản dài đã copy. Phím tắt hãy lấy Clipboard.");
     location.href = href;
   }
 
@@ -696,10 +691,10 @@
     renderLayer();
   }
   function sheet(title, body) {
-    return `<div class="overlay"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="sheet-head"><h2 class="sheet-title">${esc(title)}</h2></div><div class="can-scroll">${body}</div></div><button type="button" class="sheet-cancel" data-act="close">Hủy</button></div>`;
+    return `<div class="overlay"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="sheet-head"><h2 class="sheet-title">${esc(title)}</h2></div><div class="can-scroll">${body}</div></div><button type="button" class="sheet-cancel" data-act="close">${esc(t("cancel"))}</button></div>`;
   }
   function modal(title, body) {
-    return `<div class="overlay center"><div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="modal-head"><div class="traffic"><button type="button" class="dot red" data-act="close" aria-label="Đóng"></button><span class="dot-decoration yellow" aria-hidden="true"></span><span class="dot-decoration green" aria-hidden="true"></span></div><h2 class="modal-title">${esc(title)}</h2><div class="modal-spacer"></div></div><div class="can-scroll">${body}</div></div></div>`;
+    return `<div class="overlay center"><div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="modal-head"><div class="traffic"><button type="button" class="dot red" data-act="close" aria-label="${esc(t("close"))}"></button><span class="dot-decoration yellow" aria-hidden="true"></span><span class="dot-decoration green" aria-hidden="true"></span></div><h2 class="modal-title">${esc(title)}</h2><div class="modal-spacer"></div></div><div class="can-scroll">${body}</div></div></div>`;
   }
   function row(act, label, extra) {
     return `<button type="button" class="row-btn" data-act="${act}" ${extra || ""}><span class="row-main">${esc(label)}</span></button>`;
@@ -711,7 +706,7 @@
     }
     if (!panel) { layer.innerHTML = ""; return; }
     if (panel === "confirm") {
-      layer.innerHTML = `<div class="overlay center"><div class="modal" role="alertdialog" aria-modal="true"><div class="modal-head"><h2 class="modal-title">${esc(confirmMeta.title)}</h2></div><div class="pad"><p class="about">${esc(confirmMeta.message)}</p><button type="button" class="text-btn ${confirmMeta.danger ? "danger" : "accent"}" data-act="confirm-yes">${esc(confirmMeta.confirm)}</button><button type="button" class="text-btn" data-act="close">Hủy</button></div></div></div>`;
+      layer.innerHTML = `<div class="overlay center"><div class="modal" role="alertdialog" aria-modal="true"><div class="modal-head"><h2 class="modal-title">${esc(confirmMeta.title)}</h2></div><div class="pad"><p class="about">${esc(confirmMeta.message)}</p><button type="button" class="text-btn ${confirmMeta.danger ? "danger" : "accent"}" data-act="confirm-yes">${esc(confirmMeta.confirm)}</button><button type="button" class="text-btn" data-act="close">${esc(t("cancel"))}</button></div></div></div>`;
       return;
     }
     if (panel === "notes") {
@@ -719,19 +714,19 @@
       const items = sortNotes(data.notes).filter((n) => !q || noteLabel(n).toLocaleLowerCase("vi").includes(q) || n.body.toLocaleLowerCase("vi").includes(q));
       const list = items.map((n) => {
         if (naming === n.id) {
-          return `<div class="note-row is-active"><div class="pad"><input id="noteName" class="field" placeholder="Không có tiêu đề" aria-label="Tên ghi chú" value="${esc(nameDraft)}"><button type="button" class="text-btn accent" data-act="save-name" data-id="${esc(n.id)}">Lưu tên</button></div></div>`;
+          return `<div class="note-row is-active"><div class="pad"><input id="noteName" class="field" placeholder="${esc(t("untitled"))}" aria-label="${esc(t("note_name"))}" value="${esc(nameDraft)}"><button type="button" class="text-btn accent" data-act="save-name" data-id="${esc(n.id)}">${esc(t("note_save_name"))}</button></div></div>`;
         }
-        return `<div class="note-row${n.id === data.activeId ? " is-active" : ""}" data-act="open-note" data-id="${esc(n.id)}"><div class="note-open"><button type="button" class="row-label" data-act="open-note" data-id="${esc(n.id)}">${esc(noteLabel(n))}</button><span class="row-sub">${esc(formatWhen(n.updatedAt))} · ${cachedStats(n).words} từ</span></div><div class="note-actions"><button type="button" class="icon-btn mini" data-act="rename-note" data-id="${esc(n.id)}" aria-label="Đổi tên">${ICON.edit}</button><button type="button" class="icon-btn mini${n.pinned ? " is-on" : ""}" data-act="pin" data-id="${esc(n.id)}" aria-label="Ghim">${ICON.pin}</button><button type="button" class="icon-btn mini danger" data-act="delete-note" data-id="${esc(n.id)}" aria-label="Xóa ghi chú">${ICON.trash}</button></div></div>`;
+        return `<div class="note-row${n.id === data.activeId ? " is-active" : ""}" data-act="open-note" data-id="${esc(n.id)}"><div class="note-open"><button type="button" class="row-label" data-act="open-note" data-id="${esc(n.id)}">${esc(noteLabel(n))}</button><span class="row-sub">${esc(formatWhen(n.updatedAt))} · ${esc(t("stats_words", { count: cachedStats(n).words }))}</span></div><div class="note-actions"><button type="button" class="icon-btn mini" data-act="rename-note" data-id="${esc(n.id)}" aria-label="${esc(t("note_rename"))}">${ICON.edit}</button><button type="button" class="icon-btn mini${n.pinned ? " is-on" : ""}" data-act="pin" data-id="${esc(n.id)}" aria-label="${esc(t("note_pin"))}">${ICON.pin}</button><button type="button" class="icon-btn mini danger" data-act="delete-note" data-id="${esc(n.id)}" aria-label="${esc(t("note_delete"))}">${ICON.trash}</button></div></div>`;
       }).join("");
       if (resultsOnly) {
         const results = $("noteResults");
-        if (results) results.innerHTML = list || '<div class="empty-hint">Không có ghi chú khớp.</div>';
+        if (results) results.innerHTML = list || `<div class="empty-hint">${esc(t("note_filter_empty"))}</div>`;
         return;
       }
       const create = naming === "new"
-        ? `<div class="pad"><label class="setting-label" for="noteName">Tên ghi chú</label><input id="noteName" class="field" placeholder="Không có tiêu đề" aria-label="Tên ghi chú" value="${esc(nameDraft)}"><button type="button" class="text-btn accent" data-act="save-new">Tạo</button></div>`
-        : `<button type="button" class="row-btn accent" data-act="new-note"><span class="row-main">${ICON.plus} Ghi chú mới</span></button>`;
-      layer.innerHTML = sheet("Ghi chú", `<div class="search-wrap"><input id="noteQuery" class="field" placeholder="Lọc ghi chú" aria-label="Lọc ghi chú" value="${esc(noteQuery)}"></div><div class="group">${create}<div id="noteResults">${list || '<div class="empty-hint">Không có ghi chú khớp.</div>'}</div></div>`);
+        ? `<div class="pad"><label class="setting-label" for="noteName">${esc(t("note_name"))}</label><input id="noteName" class="field" placeholder="${esc(t("untitled"))}" aria-label="${esc(t("note_name"))}" value="${esc(nameDraft)}"><button type="button" class="text-btn accent" data-act="save-new">${esc(t("create"))}</button></div>`
+        : `<button type="button" class="row-btn accent" data-act="new-note"><span class="row-main">${ICON.plus} ${esc(t("note_new"))}</span></button>`;
+      layer.innerHTML = sheet(t("notes_title"), `<div class="search-wrap"><input id="noteQuery" class="field" placeholder="${esc(t("note_filter"))}" aria-label="${esc(t("note_filter"))}" value="${esc(noteQuery)}"></div><div class="group">${create}<div id="noteResults">${list || `<div class="empty-hint">${esc(t("note_filter_empty"))}</div>`}</div></div>`);
       const input = $("noteQuery");
       if (input) {
         const filterNotes = (e) => {
@@ -761,32 +756,32 @@
     }
     if (panel === "tools") {
       const tools = [
-        ["upper", "IN HOA"], ["lower", "chữ thường"], ["title", "Viết hoa chữ đầu"],
-        ["sort", "Sắp xếp dòng"], ["reverse", "Đảo thứ tự dòng"], ["unique", "Xóa dòng trùng"],
-        ["trim", "Cắt khoảng trắng thừa"], ["blank", "Gộp dòng trống"], ["html", "Bỏ thẻ HTML"],
+        ["upper", t("tool_upper")], ["lower", t("tool_lower")], ["title", t("tool_title")],
+        ["sort", t("tool_sort")], ["reverse", t("tool_reverse")], ["unique", t("tool_unique")],
+        ["trim", t("tool_trim")], ["blank", t("tool_blank")], ["html", t("tool_html")],
       ];
       const dataTools = [
-        ["json-pretty", "JSON đẹp"], ["json-min", "JSON gọn"], ["b64e", "Base64 mã hóa"],
-        ["b64d", "Base64 giải mã"], ["urle", "URL mã hóa"], ["urld", "URL giải mã"],
+        ["json-pretty", t("tool_json_pretty")], ["json-min", t("tool_json_min")], ["b64e", t("tool_b64_encode")],
+        ["b64d", t("tool_b64_decode")], ["urle", t("tool_url_encode")], ["urld", t("tool_url_decode")],
       ];
-      const more = [["find", "Tìm và thay"], ["dup", "Nhân bản ghi chú"], ["history", "Lịch sử phiên bản"], ["share", "Chia sẻ văn bản"]];
+      const more = [["find", t("find_title")], ["dup", t("note_duplicate")], ["history", t("history_title")], ["share", t("share_text")]];
       const group = (list) => `<div class="group">${list.map(([act, label]) => row(act, label)).join("")}</div>`;
-      layer.innerHTML = sheet("Công cụ", `<div class="section-label">Văn bản</div>${group(tools)}<div class="section-label">Dữ liệu</div>${group(dataTools)}<div class="section-label">Ghi chú</div>${group(more)}`);
+      layer.innerHTML = sheet(t("tools_title"), `<div class="section-label">${esc(t("section_text"))}</div>${group(tools)}<div class="section-label">${esc(t("section_data"))}</div>${group(dataTools)}<div class="section-label">${esc(t("notes_title"))}</div>${group(more)}`);
       return;
     }
     if (panel === "history") {
       const snaps = data.snaps.filter((s) => s.noteId === active().id);
       const body = snaps.length
         ? `<div class="group">${snaps.map((s) => `<button type="button" class="row-btn" data-act="restore" data-id="${esc(s.id)}"><span class="row-copy"><span class="row-label">${esc(formatWhen(s.at))}</span><span class="row-sub">${esc(titleFromBody(s.body))}</span></span></button>`).join("")}</div>`
-        : `<div class="empty-hint">Chưa có phiên bản. Bản lưu được tạo sau khi bạn ngừng gõ vài giây.</div>`;
-      layer.innerHTML = sheet("Lịch sử phiên bản", body);
+        : `<div class="empty-hint">${esc(t("history_empty"))}</div>`;
+      layer.innerHTML = sheet(t("history_title"), body);
       return;
     }
     if (panel === "export") {
       if (!exportExt) {
-        layer.innerHTML = sheet("Xuất tệp", `<div class="group">${EXPORTS.map(([ext, label]) => `<button type="button" class="row-btn accent" data-act="pick-ext" data-ext="${ext}">${esc(label)} (${ext})</button>`).join("")}</div>`);
+        layer.innerHTML = sheet(t("export_title"), `<div class="group">${EXPORTS.map(([ext, label]) => `<button type="button" class="row-btn accent" data-act="pick-ext" data-ext="${ext}">${esc(t(label))} (${ext})</button>`).join("")}</div>`);
       } else {
-        layer.innerHTML = sheet(`Xuất ${exportExt}`, `<div class="pad"><label class="setting-label" for="exportName">Tên tệp</label><input id="exportName" class="field" value="${esc(exportName)}"><button type="button" class="text-btn accent" data-act="do-export">Xuất ${esc(exportExt)}</button><button type="button" class="text-btn" data-act="export-back">Chọn lại định dạng</button></div>`);
+        layer.innerHTML = sheet(t("export_format", { ext: exportExt }), `<div class="pad"><label class="setting-label" for="exportName">${esc(t("file_name"))}</label><input id="exportName" class="field" value="${esc(exportName)}"><button type="button" class="text-btn accent" data-act="do-export">${esc(t("export_format", { ext: exportExt }))}</button><button type="button" class="text-btn" data-act="export-back">${esc(t("export_back"))}</button></div>`);
         const input = $("exportName");
         if (input) input.addEventListener("input", () => { exportName = input.value; });
       }
@@ -794,37 +789,37 @@
     }
     if (panel === "send") {
       const list = data.settings.shortcuts.map((name) => `<button type="button" class="row-btn accent" data-act="send" data-name="${esc(name)}">${esc(name)}</button>`).join("");
-      layer.innerHTML = sheet("Gửi sang Phím tắt", `<div class="group">${list}</div><div class="section-label">Phím tắt khác</div><div class="group"><div class="shortcut-edit"><input id="customName" class="field" placeholder="Tên Phím tắt" aria-label="Tên Phím tắt" value="${esc(customName)}"><button type="button" class="sym-btn" data-act="send-custom">Gửi</button></div></div>`);
+      layer.innerHTML = sheet(t("shortcut_title"), `<div class="group">${list}</div><div class="section-label">${esc(t("shortcut_custom"))}</div><div class="group"><div class="shortcut-edit"><input id="customName" class="field" placeholder="${esc(t("shortcut_name"))}" aria-label="${esc(t("shortcut_name"))}" value="${esc(customName)}"><button type="button" class="sym-btn" data-act="send-custom">${esc(t("send"))}</button></div></div>`);
       const input = $("customName");
       if (input) {
         input.addEventListener("input", () => { customName = input.value; });
-        input.addEventListener("keydown", (e) => { if (e.key === "Enter") sendTo(customName); });
+        input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); sendTo(customName); } });
       }
       return;
     }
     if (panel === "settings") {
       const s = data.settings;
-      const shortcuts = s.shortcuts.map((name, index) => `<div class="shortcut-edit"><input class="field" data-shortcut="${index}" aria-label="Phím tắt ${index + 1}" value="${esc(name)}"><button type="button" class="icon-btn mini danger" data-act="del-shortcut" data-index="${index}" aria-label="Xóa phím tắt">${ICON.trash}</button></div>`).join("");
-      layer.innerHTML = modal("Cài đặt", `<div class="pad">
-        <div class="setting-block"><div class="setting-label">Giao diện</div><div class="seg">
-          <button type="button" class="${s.theme === "system" ? "is-on" : ""}" data-act="theme" data-theme="system">Hệ thống</button>
-          <button type="button" class="${s.theme === "light" ? "is-on" : ""}" data-act="theme" data-theme="light">Sáng</button>
-          <button type="button" class="${s.theme === "dark" ? "is-on" : ""}" data-act="theme" data-theme="dark">Tối</button>
+      const shortcuts = s.shortcuts.map((name, index) => `<div class="shortcut-edit"><input class="field" data-shortcut="${index}" aria-label="${esc(t("shortcut_index", { index: index + 1 }))}" value="${esc(name)}"><button type="button" class="icon-btn mini danger" data-act="del-shortcut" data-index="${index}" aria-label="${esc(t("shortcut_delete"))}">${ICON.trash}</button></div>`).join("");
+      layer.innerHTML = modal(t("modal_title"), `<div class="pad">
+        <div class="setting-block"><div class="setting-label">${esc(t("theme_title"))}</div><div class="seg">
+          <button type="button" class="${s.theme === "system" ? "is-on" : ""}" data-act="theme" data-theme="system">${esc(t("theme_system"))}</button>
+          <button type="button" class="${s.theme === "light" ? "is-on" : ""}" data-act="theme" data-theme="light">${esc(t("theme_light"))}</button>
+          <button type="button" class="${s.theme === "dark" ? "is-on" : ""}" data-act="theme" data-theme="dark">${esc(t("theme_dark"))}</button>
         </div></div>
-        <div class="setting-block"><div class="setting-label">Cỡ chữ</div><div class="stepper">
-          <button type="button" class="sym-btn" data-act="font" data-dir="-1" aria-label="Nhỏ hơn">${ICON.minus}</button>
+        <div class="setting-block"><div class="setting-label">${esc(t("font_size"))}</div><div class="stepper">
+          <button type="button" class="sym-btn" data-act="font" data-dir="-1" aria-label="${esc(t("font_smaller"))}">${ICON.minus}</button>
           <span>${s.fontSize} px</span>
-          <button type="button" class="sym-btn" data-act="font" data-dir="1" aria-label="Lớn hơn">${ICON.plus}</button>
+          <button type="button" class="sym-btn" data-act="font" data-dir="1" aria-label="${esc(t("font_larger"))}">${ICON.plus}</button>
         </div></div>
         <div class="group">
-          <button type="button" class="row-btn" data-act="wrap"><span>Ngắt dòng</span><span class="row-sub">${s.wrap ? "Bật" : "Tắt"}</span></button>
-          <button type="button" class="row-btn" data-act="tabsize"><span>Độ rộng Tab</span><span class="row-sub">${s.tabSize} dấu cách</span></button>
+          <button type="button" class="row-btn" data-act="wrap"><span>${esc(t("wrap"))}</span><span class="row-sub">${esc(t(s.wrap ? "on" : "off"))}</span></button>
+          <button type="button" class="row-btn" data-act="tabsize"><span>${esc(t("tab_width"))}</span><span class="row-sub">${esc(t("tab_spaces", { count: s.tabSize }))}</span></button>
         </div>
-        <div class="setting-block"><div class="setting-label">Phím tắt hay dùng</div><div class="group">${shortcuts}${s.shortcuts.length < 8 ? '<button type="button" class="row-btn accent" data-act="add-shortcut">Thêm tên</button>' : ""}</div></div>
+        <div class="setting-block"><div class="setting-label">${esc(t("shortcut_favorites"))}</div><div class="group">${shortcuts}${s.shortcuts.length < 8 ? `<button type="button" class="row-btn accent" data-act="add-shortcut">${esc(t("shortcut_add"))}</button>` : ""}</div></div>
         <div class="group">
-          <a class="row-btn" href="https://browse.shortcuty.app/user/Sentechtipsvn" target="_blank" rel="noreferrer"><span class="row-main">Tác giả</span></a>
-          <a class="row-btn" href="mailto:sentechtips@gmail.com"><span class="row-main">Liên hệ</span></a>
-          <button type="button" class="row-btn" data-act="info"><span class="row-main">Thông tin</span></button>
+          <a class="row-btn" href="https://browse.shortcuty.app/user/Sentechtipsvn" target="_blank" rel="noreferrer"><span class="row-main">${esc(t("author"))}</span></a>
+          <a class="row-btn" href="mailto:sentechtips@gmail.com"><span class="row-main">${esc(t("contact"))}</span></a>
+          <button type="button" class="row-btn" data-act="info"><span class="row-main">${esc(t("info"))}</span></button>
         </div>
       </div>`);
       layer.querySelectorAll("[data-shortcut]").forEach((input) => {
@@ -839,7 +834,7 @@
       return;
     }
     if (panel === "info") {
-      layer.innerHTML = modal("Thông tin", `<div class="pad"><div class="about-name">Quick Text Editor Pro</div><div class="about-ver">Phiên bản 1.2</div><p class="about">Soạn thảo nhanh cho webclip trên màn hình chính và Phím tắt iOS. Văn bản tự lưu trên máy, có nhiều ghi chú, lịch sử phiên bản, công cụ JSON / Base64 và xuất tệp.</p><p class="about">Phím tắt đổ nội dung vào bằng cách mở địa chỉ kèm ?text=. Gửi ngược lại bằng nút máy bay. Nếu văn bản quá dài, app copy vào Clipboard rồi mở Phím tắt không kèm URL.</p><button type="button" class="text-btn accent" data-act="settings">Quay lại</button></div>`);
+      layer.innerHTML = modal(t("info"), `<div class="pad"><div class="about-name">${esc(t("app_title"))}</div><div class="about-ver">${esc(t("about_version", { version: "1.2.1" }))}</div><p class="about">${esc(t("about_description"))}</p><p class="about">${esc(t("about_shortcuts"))}</p><button type="button" class="text-btn accent" data-act="settings">${esc(t("back"))}</button></div>`);
     }
   }
   function openPanel(name) {
@@ -920,9 +915,9 @@
       const id = btn.dataset.id;
       const note = data.notes.find((n) => n.id === id);
       ask({
-        title: "Xóa ghi chú",
-        message: `Xóa “${noteLabel(note)}”?`,
-        confirm: "Xóa",
+        title: t("note_delete"),
+        message: t("note_delete_confirm", { title: noteLabel(note) }),
+        confirm: t("delete"),
         danger: true,
         run: () => {
           data.notes = data.notes.filter((n) => n.id !== id);
@@ -953,9 +948,9 @@
     if (act === "json-pretty") return formatJson(true);
     if (act === "json-min") return formatJson(false);
     if (act === "b64e") return transform(utf8ToB64);
-    if (act === "b64d") return transform((c) => { try { return b64ToUtf8(c); } catch { throw new Error("Base64 không hợp lệ"); } });
+    if (act === "b64d") return transform((c) => { try { return b64ToUtf8(c); } catch { throw new Error(t("base64_invalid")); } });
     if (act === "urle") return transform((c) => encodeURIComponent(c));
-    if (act === "urld") return transform((c) => { try { return decodeURIComponent(c); } catch { throw new Error("URL không hợp lệ"); } });
+    if (act === "urld") return transform((c) => { try { return decodeURIComponent(c); } catch { throw new Error(t("url_invalid")); } });
     if (act === "find") { closePanel(); findOpen = true; paintChrome(); $("findQuery").focus(); return; }
     if (act === "dup") {
       const note = active();
@@ -970,19 +965,19 @@
       refreshStats();
       closePanel();
       paintChrome();
-      toast("Đã nhân bản");
+      toast(t("note_duplicated"));
       return;
     }
     if (act === "history") return openPanel("history");
     if (act === "share") {
       const text = area.value;
-      if (!text) { toast("Không có nội dung"); return; }
+      if (!text) { toast(t("content_empty")); return; }
       if (navigator.share) {
         navigator.share({ title: titleFromBody(text), text }).catch((error) => {
-          if (!(error instanceof DOMException && error.name === "AbortError")) toast("Không chia sẻ được");
+          if (!(error instanceof DOMException && error.name === "AbortError")) toast(t("share_failed"));
         });
       } else {
-        copyText(text).then((ok) => toast(ok ? "Đã copy — máy không có bảng chia sẻ" : "Không chia sẻ được"));
+        copyText(text).then((ok) => toast(ok ? t("copied_no_share") : t("share_failed")));
       }
       return;
     }
@@ -992,7 +987,7 @@
       rememberSnap();
       replaceRange(0, area.value.length, snap.body, snap.body.length, snap.body.length);
       closePanel();
-      toast("Đã khôi phục phiên bản");
+      toast(t("history_restored"));
       return;
     }
     if (act === "pick-ext") {
@@ -1017,10 +1012,10 @@
       saveFile(fileName, mime, body).then((mode) => {
         closePanel();
         exportExt = null;
-        toast(mode === "shared" ? "Đã mở bảng chia sẻ" : "Đã tải tệp");
+        toast(mode === "shared" ? t("share_opened") : t("file_downloaded"));
       }).catch((error) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
-        toast("Không xuất được tệp");
+        toast(t("export_failed"));
       });
       return;
     }
@@ -1046,7 +1041,7 @@
       return;
     }
     if (act === "add-shortcut") {
-      data.settings.shortcuts = data.settings.shortcuts.concat("Phím tắt mới");
+      data.settings.shortcuts = data.settings.shortcuts.concat(t("shortcut_new"));
       persist();
       renderLayer();
       return;
@@ -1085,9 +1080,9 @@
   $("btnExport").addEventListener("click", () => { exportExt = null; openPanel("export"); });
   $("btnSend").addEventListener("click", () => openPanel("send"));
   $("btnClear").addEventListener("click", () => ask({
-    title: "Xóa nội dung",
-    message: "Xóa toàn bộ văn bản trong ghi chú này? Có thể khôi phục từ lịch sử nếu đã từng lưu.",
-    confirm: "Xóa",
+    title: t("clear_title"),
+    message: t("clear_confirm"),
+    confirm: t("delete"),
     danger: true,
     run: () => {
       rememberSnap();
@@ -1097,9 +1092,9 @@
     },
   }));
   $("btnCopy").addEventListener("click", async () => {
-    if (!area.value) { toast("Không có nội dung"); return; }
+    if (!area.value) { toast(t("content_empty")); return; }
     const ok = await copyText(area.value);
-    if (!ok) { toast("Không sao chép được"); return; }
+    if (!ok) { toast(t("copy_failed")); return; }
     copied = true;
     paintChrome();
     setTimeout(() => { copied = false; paintChrome(); }, 1200);
@@ -1152,7 +1147,7 @@
   area.addEventListener("select", syncCaret);
   area.addEventListener("keydown", (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "f") { e.preventDefault(); findOpen = true; paintChrome(); $("findQuery").focus(); return; }
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") { e.preventDefault(); persist().then(ok => { if (ok) toast("Đã lưu"); }); return; }
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") { e.preventDefault(); persist().then(ok => { if (ok) toast(t("saved")); }); return; }
     const plan = planKey(e, area.value, area.selectionStart, area.selectionEnd);
     if (!plan) return;
     e.preventDefault();
@@ -1181,6 +1176,8 @@
   async function boot() {
     $("app").inert = true;
     area.disabled = true;
+    await QTEI18n.init();
+    QTEI18n.apply(document);
     data = await loadAll();
     area.disabled = false;
     $("app").inert = false;
@@ -1190,7 +1187,7 @@
     tuneInput(area.value);
     applyTheme();
     paintChrome();
-    if (data.fromLink) toast("Đã nhận văn bản từ liên kết");
+    if (data.fromLink) toast(t("incoming_received"));
   }
   boot();
 })();

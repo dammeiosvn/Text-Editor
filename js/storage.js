@@ -13,7 +13,7 @@ window.QTEStorage = (() => {
   function complete(tx) {
     return new Promise((resolve, reject) => {
       tx.oncomplete = resolve;
-      tx.onabort = () => reject(tx.error || new Error('Không lưu được'));
+      tx.onabort = () => reject(tx.error || new Error(QTEI18n.t('storage_transaction_failed')));
       tx.onerror = () => {}; // onabort owns the failure, including quota errors.
     });
   }
@@ -44,7 +44,7 @@ window.QTEStorage = (() => {
       activeId: data.activeId, snaps: data.snaps,
     };
     const task = queue.then(async () => {
-      if (!db) throw new Error('Kho lưu chưa sẵn sàng');
+      if (!db) throw new Error(QTEI18n.t('storage_not_ready'));
       const tx = db.transaction(['notes', 'meta'], 'readwrite');
       const done = complete(tx);
       const notes = tx.objectStore('notes');

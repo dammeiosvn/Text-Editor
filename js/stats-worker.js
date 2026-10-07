@@ -8,6 +8,6 @@ self.onmessage = ({ data: { body, job, noteId } }) => {
     if (!space) { charsNoSpace += 1; if (!inWord) words += 1; }
     inWord = !space;
   }
-  const reading = words === 0 ? '0 phút đọc' : `${Math.max(1, Math.round(words / 220))} phút đọc`;
-  self.postMessage({ job, noteId, chars: body.length, stats: { chars: body.length, charsNoSpace, words, lines, reading } });
+  const readingMinutes = words === 0 ? 0 : Math.max(1, Math.round(words / 220));
+  self.postMessage({ job, noteId, chars: body.length, stats: { chars: body.length, charsNoSpace, words, lines, readingMinutes } });
 };

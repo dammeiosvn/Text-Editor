@@ -52,3 +52,11 @@ Thống kê sau khi gõ được cập nhật sau 120ms ngừng gõ; văn bản 
 - Textarea vẫn là bộ soạn thảo native; tài liệu rất lớn còn có thể chậm do wrap/layout của trình duyệt. JSON/Base64/sắp xếp/tìm kiếm lớn vẫn chạy khi người dùng chủ động gọi công cụ.
 - IndexedDB vẫn thuộc bộ nhớ của trình duyệt. App báo lỗi ghi, nhưng không bảo đảm lưu được nếu hệ điều hành đóng tiến trình giữa giao dịch.
 - Undo/Redo dùng lịch sử native trong phiên; lịch sử phiên bản lưu qua reload. App hiện chưa có service worker cho mở offline; đợt này tập trung soạn thảo và UI.
+
+## Cập nhật 1.2.1 — 07/10/2026
+
+- Danh mục tiếng Việt tăng từ 16 lên 132 key. Có 126 key dùng trong runtime/HTML; 6 key tương thích/nhãn dự phòng vẫn được giữ. Hai danh mục VI/EN khớp toàn bộ key và placeholder.
+- Giao diện đã đọc `Language/vi-VN.json`, gồm chuỗi tĩnh, popup, lỗi và thống kê. Có fallback sinh tự động từ JSON; kiểm tra fallback giống nguồn, sửa JSON tác động giao diện và bản dịch được escape khi đưa vào HTML.
+- Theo yêu cầu mới, thay toàn bộ luồng gửi Phím tắt bằng `shortcuts://run-shortcut?name=...&input=text&text=...`. Bỏ ngưỡng 1.800 ký tự và bỏ việc copy trước khi gọi; văn bản dài cũng truyền nguyên văn qua URL. Thông tin và README đã được sửa theo luồng này.
+- Kiểm tra tại ranh giới điều hướng OS: tên mặc định/tên tự nhập/Enter, tiếng Việt/emoji/ký tự URL/xuống dòng/văn bản dài đều giải mã đúng và không gọi clipboard. Chưa xác minh việc nhận trên ứng dụng Shortcuts của iOS thật.
+- Bộ kiểm tra hiện có 13 nhóm (11 nhóm trình duyệt, 2 nhóm danh mục). Nhóm kiểm tra Clipboard thất bại của bản 1.2.0 được thay bằng kiểm tra đầu vào Văn bản.
