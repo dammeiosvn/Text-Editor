@@ -3,7 +3,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
-const { chromium } = require('playwright');
+const { chromium, webkit } = require('playwright');
+const browserType = process.env.PLAYWRIGHT_BROWSER === 'webkit' ? webkit : chromium;
 const root = path.resolve(__dirname, '..');
 let server, browser, page, base;
 const errors = [];
@@ -52,9 +53,9 @@ before(async () => {
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   base = `http://127.0.0.1:${server.address().port}`;
-  browser = await chromium.launch({
+  browser = await browserType.launch({
     executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH || undefined,
-    args: ['--no-sandbox', '--disable-dev-shm-usage', '--no-zygote', '--single-process'],
+    args: browserType === chromium ? ['--no-sandbox', '--disable-dev-shm-usage', '--no-zygote', '--single-process'] : [],
   });
   page = await browser.newPage({ acceptDownloads: true });
   page.on('pageerror', error => errors.push(error.message));

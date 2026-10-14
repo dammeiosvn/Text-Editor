@@ -55,3 +55,19 @@ npm test
 ```
 
 Các test phát hiện key thiếu, placeholder không khớp và bản dự phòng chưa cập nhật. Luồng Phím tắt luôn dùng `input=text`; nút Sao chép riêng vẫn giữ chức năng sao chép.
+
+## Bản 1.2.2 — Luồng nhập liệu và bàn phím
+
+- Giữ `autocorrect` và `autocapitalize` ổn định trong mỗi phiên nhập. Chỉ cấu hình khi ô chưa focus hoặc khi người dùng chủ động đổi chế độ code; không gán lại thuộc tính mỗi lần gõ. Dùng attribute `autocorrect="off"` đúng chuẩn thay cho gán chuỗi vào property boolean.
+- Đồng bộ chiều cao/vị trí app theo `visualViewport`, bỏ vòng `scrollTo(0, 0)` tranh cuộn với bàn phím. Cỡ chữ code thấp nhất là 16px.
+- Bảo vệ gõ ghép dấu/IME trên ô soạn thảo, tìm kiếm, tên ghi chú và tên Phím tắt; Enter khi đang ghép chữ không chạy lệnh hay gửi Phím tắt. Bộ lọc ghi chú chờ ghép chữ xong mới cập nhật.
+- Tạo ghi chú focus ngay trong thao tác người dùng. Nút ngoặc/Tab/Undo/Redo giữ focus; ngoặc bọc vùng chọn thay vì xóa nội dung được chọn.
+- Vẫn tắt kiểm tra chính tả trước khi dán văn bản lớn; không đổi cấu hình tự sửa/tự viết hoa trong thao tác dán. Nội dung không đổi không tạo thêm lượt lưu/lịch sử.
+
+21 kiểm tra đạt trên Chromium và WebKit. WebKit tự động không thay thế việc thử bàn phím iOS thật. Xem phần 1.2.2 trong [AUDIT.md](AUDIT.md) để biết phạm vi kiểm chứng và các bước thử trên iPhone.
+
+```sh
+npx playwright install --with-deps chromium webkit
+npm test
+PLAYWRIGHT_BROWSER=webkit npm test
+```

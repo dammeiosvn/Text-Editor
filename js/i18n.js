@@ -10,7 +10,7 @@ window.QTEI18n = (() => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 1500);
     try {
-      const response = await fetch('Language/vi-VN.json?v=1.2.1', { signal: controller.signal });
+      const response = await fetch('Language/vi-VN.json?v=1.2.2', { signal: controller.signal });
       if (!response.ok) throw new Error('Catalog unavailable');
       const catalog = await response.json();
       const valid = Object.fromEntries(Object.entries(catalog).filter(([,value]) => typeof value === 'string'));

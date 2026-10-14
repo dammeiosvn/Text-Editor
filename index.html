@@ -14,7 +14,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon/app-icon.png">
-  <link rel="stylesheet" href="css/style.css?v=1.2.1">
+  <link rel="stylesheet" href="css/style.css?v=1.2.2">
   <style>
     html,body{margin:0;background:#f2f2f7;height:100%;overflow:hidden}
     @media (prefers-color-scheme: dark){html,body{background:#000}}
@@ -60,7 +60,8 @@
         var height = Math.round(h) + "px", offset = Math.round(top) + "px";
         if (root.style.getPropertyValue("--app-h") !== height) root.style.setProperty("--app-h", height);
         if (root.style.getPropertyValue("--app-top") !== offset) root.style.setProperty("--app-top", offset);
-        if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
+        // iOS pans the visual viewport to reveal the caret. Do not fight it
+        // with scrollTo(): the fixed app follows offsetTop instead.
       }
       applyTheme();
       syncViewport();
@@ -78,9 +79,7 @@
         setTimeout(sync, 50);
         setTimeout(sync, 320);
       });
-      window.addEventListener("scroll", function () {
-        if (window.scrollY || window.scrollX) window.scrollTo(0, 0);
-      }, { passive: true });
+      window.addEventListener("scroll", sync, { passive: true });
       if (window.visualViewport) {
         window.visualViewport.addEventListener("resize", sync);
         window.visualViewport.addEventListener("scroll", sync);
@@ -118,7 +117,7 @@
       </div>
     </div>
     <main class="ed-main">
-      <textarea aria-label="Nội dung ghi chú" id="mainEditor" class="ed-input" spellcheck="true" placeholder="Nhập văn bản hoặc code tại đây…" data-i18n-aria-label="editor_label" data-i18n-placeholder="editor_placeholder"></textarea>
+      <textarea aria-label="Nội dung ghi chú" id="mainEditor" class="ed-input" inputmode="text" autocorrect="on" autocapitalize="sentences" spellcheck="true" placeholder="Nhập văn bản hoặc code tại đây…" data-i18n-aria-label="editor_label" data-i18n-placeholder="editor_placeholder"></textarea>
     </main>
     <div id="symBar" class="sym-bar" hidden>
       <button type="button" class="sym-btn" data-insert="tab">Tab</button>
@@ -138,9 +137,9 @@
     </footer>
     <div id="layer"></div>
   </div>
-  <script src="js/vi-VN.js?v=1.2.1"></script>
-  <script src="js/i18n.js?v=1.2.1"></script>
-  <script src="js/storage.js?v=1.2.1"></script>
-  <script src="js/app.js?v=1.2.1"></script>
+  <script src="js/vi-VN.js?v=1.2.2"></script>
+  <script src="js/i18n.js?v=1.2.2"></script>
+  <script src="js/storage.js?v=1.2.2"></script>
+  <script src="js/app.js?v=1.2.2"></script>
 </body>
 </html>
