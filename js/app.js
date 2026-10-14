@@ -1,4 +1,4 @@
-/* Quick Text Editor Pro 1.2.1 — static build for GitHub Pages */
+/* Quick Text Editor Pro 1.2.2 — static build for GitHub Pages */
 (function () {
   const t = (key, params) => QTEI18n.t(key, params);
   const NOTES_KEY = "qte.notes.v1";
@@ -78,6 +78,22 @@
   let exportName = "";
   let customName = "";
   let caret = { start: 0, end: 0 };
+  let composingTarget = null;
+
+  // Safari can finish IME input with isComposing=false and keyCode=229.
+  document.addEventListener("compositionstart", (e) => {
+    composingTarget = e.target;
+    if (e.target === area) { clearTimeout(statsTimer); statsTimer = 0; }
+  }, true);
+  document.addEventListener("compositionend", (e) => {
+    if (composingTarget === e.target) composingTarget = null;
+  }, true);
+  document.addEventListener("blur", (e) => {
+    if (composingTarget === e.target) composingTarget = null;
+  }, true);
+  function isComposing(e) {
+    return e.isComposing || e.keyCode === 229 || e.key === "Process" || e.target === composingTarget;
+  }
 
   function uid() {
     if (crypto.randomUUID) return crypto.randomUUID();
@@ -279,7 +295,7 @@
     paintChrome();
   }
   try {
-    statsWorker = new Worker("js/stats-worker.js?v=1.2.1");
+    statsWorker = new Worker("js/stats-worker.js?v=1.2.2");
     statsWorker.onmessage = ({ data: result }) => {
       if (!data || result.job !== statsJob || result.noteId !== active().id || result.chars !== active().body.length) return;
       statsBody = active().body;
@@ -358,13 +374,37 @@
     return /\S{80,}/.test(body || "");
   }
   function tuneInput(body) {
+    // Keep keyboard traits stable for the whole focused editing session.
+    if (!data || document.activeElement === area || composingTarget === area) return;
     const heavy = body.length > 100000 || longToken(body);
-    area.spellcheck = !heavy && !active().codeMode;
-    area.autocorrect = heavy || active().codeMode ? "off" : "on";
-    area.autocapitalize = heavy || active().codeMode ? "off" : "sentences";
+    const assisted = !heavy && !active().codeMode;
+    const attributes = {
+      spellcheck: assisted ? "true" : "false",
+      autocorrect: assisted ? "on" : "off",
+      autocapitalize: assisted ? "sentences" : "none",
+    };
+    for (const [name, value] of Object.entries(attributes)) {
+      // autocorrect's JS property is boolean; assigning "off" enables it.
+      if (area.getAttribute(name) !== value) area.setAttribute(name, value);
+    }
+  }
+  function focusEditor() {
+    if (document.activeElement === area) return;
+    tuneInput(area.value);
+    area.focus({ preventScroll: true });
+  }
+  function scheduleStats() {
+    clearTimeout(statsTimer);
+    statsTimer = setTimeout(() => {
+      statsTimer = 0;
+      if (composingTarget === area) return;
+      tuneInput(active().body);
+      refreshStats();
+    }, 120);
   }
   function updateBody(body) {
     const note = active();
+    if (note.body === body) return;
     note.body = body;
     note.updatedAt = Date.now();
     revision += 1;
@@ -374,14 +414,13 @@
     clearTimeout(saveTimer);
     saveTimer = setTimeout(persist, 600);
     scheduleSnap();
-    clearTimeout(statsTimer);
-    statsTimer = setTimeout(() => { tuneInput(active().body); refreshStats(); }, 120);
+    scheduleStats();
     scheduleChrome();
   }
   function replaceRange(from, to, text, selStart, selEnd) {
     const el = area;
-    if (panel) closePanel();
-    el.focus({ preventScroll: true });
+    if (panel) closePanel(false);
+    focusEditor();
     const a = Math.max(0, Math.min(from, el.value.length));
     const b = Math.max(a, Math.min(to, el.value.length));
     el.setSelectionRange(a, b);
@@ -398,7 +437,7 @@
   }
   function paintChrome() {
     const note = active();
-    if (!statsCache || (statsBody !== note.body && !statsTimer && !statsWorker)) {
+    if (!statsCache || (statsBody !== note.body && !statsTimer && !statsWorker && composingTarget !== area)) {
       statsBody = note.body;
       statsCache = cachedStats(note);
     }
@@ -451,7 +490,7 @@
     if (!matches.length) return;
     matchIndex = (matchIndex + delta + matches.length) % matches.length;
     const hit = matches[matchIndex];
-    area.focus();
+    focusEditor();
     area.setSelectionRange(hit.start, hit.end);
     const line = area.value.slice(0, hit.start).split("\n").length;
     const lh = parseFloat(getComputedStyle(area).lineHeight) || 24;
@@ -472,7 +511,7 @@
   }
 
   function planKey(e, value, start, end) {
-    if (e.isComposing || e.key === "Process" || e.metaKey || e.ctrlKey || e.altKey) return null;
+    if (isComposing(e) || e.metaKey || e.ctrlKey || e.altKey) return null;
     const codeMode = active().codeMode;
     const tabSize = data.settings.tabSize;
     if (e.key === "Tab") return e.shiftKey ? outdent(value, start, end, tabSize) : indent(value, start, end, tabSize);
@@ -677,7 +716,7 @@
     refreshStats();
     closePanel();
     paintChrome();
-    setTimeout(() => area.focus(), 40);
+    focusEditor();
   }
   function saveNoteName(id, raw) {
     const note = data.notes.find((n) => n.id === id);
@@ -731,13 +770,14 @@
       if (input) {
         const filterNotes = (e) => {
           noteQuery = input.value;
-          if (e.isComposing) return;
           clearTimeout(input._filterTimer);
+          if (isComposing(e)) return;
           input._filterTimer = setTimeout(() => {
-            if (panel !== "notes" || !input.isConnected) return;
+            if (panel !== "notes" || !input.isConnected || composingTarget === input) return;
             renderLayer(true);
           }, 120);
         };
+        input.addEventListener("compositionstart", () => clearTimeout(input._filterTimer));
         input.addEventListener("input", filterNotes);
         input.addEventListener("compositionend", filterNotes);
       }
@@ -745,12 +785,12 @@
       if (nameInput) {
         nameInput.addEventListener("input", () => { nameDraft = nameInput.value; });
         nameInput.addEventListener("keydown", (e) => {
-          if (e.key !== "Enter") return;
+          if (e.key !== "Enter" || isComposing(e)) return;
           e.preventDefault();
           if (naming === "new") createNamedNote(nameInput.value);
           else saveNoteName(naming, nameInput.value);
         });
-        setTimeout(() => nameInput.focus(), 40);
+        nameInput.focus({ preventScroll: true });
       }
       return;
     }
@@ -793,7 +833,7 @@
       const input = $("customName");
       if (input) {
         input.addEventListener("input", () => { customName = input.value; });
-        input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); sendTo(customName); } });
+        input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !isComposing(e)) { e.preventDefault(); sendTo(customName); } });
       }
       return;
     }
@@ -834,7 +874,7 @@
       return;
     }
     if (panel === "info") {
-      layer.innerHTML = modal(t("info"), `<div class="pad"><div class="about-name">${esc(t("app_title"))}</div><div class="about-ver">${esc(t("about_version", { version: "1.2.1" }))}</div><p class="about">${esc(t("about_description"))}</p><p class="about">${esc(t("about_shortcuts"))}</p><button type="button" class="text-btn accent" data-act="settings">${esc(t("back"))}</button></div>`);
+      layer.innerHTML = modal(t("info"), `<div class="pad"><div class="about-name">${esc(t("app_title"))}</div><div class="about-ver">${esc(t("about_version", { version: "1.2.2" }))}</div><p class="about">${esc(t("about_description"))}</p><p class="about">${esc(t("about_shortcuts"))}</p><button type="button" class="text-btn accent" data-act="settings">${esc(t("back"))}</button></div>`);
     }
   }
   function openPanel(name) {
@@ -843,15 +883,16 @@
     area.blur();
     renderLayer();
     document.querySelectorAll(".ed-header, .ed-main, .ed-toolbar, .sym-bar, .find-bar").forEach(el => { el.inert = true; });
-    layer.querySelector("button, input, a")?.focus({ preventScroll: true });
+    if (!layer.contains(document.activeElement)) layer.querySelector("button, input, a")?.focus({ preventScroll: true });
   }
-  function closePanel() {
+  function closePanel(restoreFocus = true) {
+    if (!panel) return;
     panel = null;
     layer.dataset.panel = "";
     confirmRun = null;
     layer.innerHTML = "";
     document.querySelectorAll(".ed-header, .ed-main, .ed-toolbar, .sym-bar, .find-bar").forEach(el => { el.inert = false; });
-    if (panelOpener?.isConnected) panelOpener.focus({ preventScroll: true });
+    if (restoreFocus && panelOpener?.isConnected) panelOpener.focus({ preventScroll: true });
     panelOpener = null;
   }
   function ask(meta) {
@@ -927,9 +968,9 @@
           if (data.activeId === id) data.activeId = data.notes[0].id;
           persist();
           area.value = active().body;
-      caret = { start: 0, end: 0 };
-      tuneInput(area.value);
-      refreshStats();
+          caret = { start: 0, end: 0 };
+          tuneInput(area.value);
+          refreshStats();
           closePanel();
           paintChrome();
         },
@@ -1071,10 +1112,13 @@
   $("btnStats").addEventListener("click", () => { statMode += 1; paintChrome(); });
   $("btnCode").addEventListener("click", () => {
     const note = active();
+    const wasEditing = document.activeElement === area;
+    if (wasEditing) area.blur();
     note.codeMode = !note.codeMode;
     tuneInput(note.body);
     persist();
     paintChrome();
+    if (wasEditing) focusEditor();
   });
   $("btnTools").addEventListener("click", () => openPanel("tools"));
   $("btnExport").addEventListener("click", () => { exportExt = null; openPanel("export"); });
@@ -1088,7 +1132,7 @@
       rememberSnap();
       replaceRange(0, area.value.length, "", 0, 0);
       closePanel();
-      area.focus();
+      focusEditor();
     },
   }));
   $("btnCopy").addEventListener("click", async () => {
@@ -1105,7 +1149,7 @@
   $("findNext").addEventListener("click", () => jumpMatch(1));
   $("findQuery").addEventListener("input", () => { query = $("findQuery").value; matchIndex = 0; paintChrome(); });
   $("findQuery").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") { e.preventDefault(); jumpMatch(e.shiftKey ? -1 : 1); }
+    if (e.key === "Enter" && !isComposing(e)) { e.preventDefault(); jumpMatch(e.shiftKey ? -1 : 1); }
   });
   $("findReplace").addEventListener("input", () => { replacement = $("findReplace").value; });
   function doReplace(all) {
@@ -1121,6 +1165,11 @@
   }
   $("replaceOne").addEventListener("click", () => doReplace(false));
   $("replaceAll").addEventListener("click", () => doReplace(true));
+  // Cancel only mouse focus, not pointer/touch input: WebKit may suppress
+  // the synthesized click when a touch pointerdown is canceled.
+  $("symBar").addEventListener("mousedown", (e) => {
+    if (document.activeElement === area && e.target.closest("button") && composingTarget !== area) e.preventDefault();
+  });
   document.querySelectorAll("[data-insert]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const token = btn.dataset.insert;
@@ -1130,22 +1179,33 @@
         return;
       }
       const start = area.selectionStart;
-      replaceRange(start, area.selectionEnd, token, start + 1, start + 1);
+      const end = area.selectionEnd;
+      const selected = area.value.slice(start, end);
+      replaceRange(start, end, token[0] + selected + token[1], start + 1, end + 1);
     });
   });
-  $("btnUndo").addEventListener("click", () => { area.focus(); document.execCommand("undo"); updateBody(area.value); syncCaret(); });
-  $("btnRedo").addEventListener("click", () => { area.focus(); document.execCommand("redo"); updateBody(area.value); syncCaret(); });
+  $("btnUndo").addEventListener("click", () => { focusEditor(); document.execCommand("undo"); updateBody(area.value); syncCaret(); });
+  $("btnRedo").addEventListener("click", () => { focusEditor(); document.execCommand("redo"); updateBody(area.value); syncCaret(); });
 
   area.addEventListener("input", () => {
     caret = { start: area.selectionStart, end: area.selectionEnd };
     updateBody(area.value);
   });
-  area.addEventListener("paste", (e) => { tuneInput(e.clipboardData?.getData("text") || area.value); });
-  area.addEventListener("compositionend", syncCaret);
+  area.addEventListener("paste", (e) => {
+    if (isComposing(e)) return;
+    const pasted = e.clipboardData?.getData("text") || "";
+    const nextLength = area.value.length - (area.selectionEnd - area.selectionStart) + pasted.length;
+    // Disable costly spelling before a large paste without changing keyboard traits.
+    if (area.spellcheck && (nextLength > 100000 || longToken(pasted))) area.spellcheck = false;
+  });
+  area.addEventListener("blur", () => tuneInput(area.value));
+  area.addEventListener("pointerdown", () => tuneInput(area.value));
+  area.addEventListener("compositionend", () => { updateBody(area.value); syncCaret(); scheduleStats(); });
   area.addEventListener("keyup", syncCaret);
   area.addEventListener("click", syncCaret);
   area.addEventListener("select", syncCaret);
   area.addEventListener("keydown", (e) => {
+    if (isComposing(e)) return;
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "f") { e.preventDefault(); findOpen = true; paintChrome(); $("findQuery").focus(); return; }
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") { e.preventDefault(); persist().then(ok => { if (ok) toast(t("saved")); }); return; }
     const plan = planKey(e, area.value, area.selectionStart, area.selectionEnd);
@@ -1159,6 +1219,7 @@
     replaceRange(plan.from, plan.to, plan.text, plan.selStart, plan.selEnd);
   });
   document.addEventListener("keydown", (e) => {
+    if (isComposing(e)) return;
     if (panel && e.key === "Tab") {
       const nodes = [...layer.querySelectorAll('button, input, a[href]')].filter(el => !el.disabled && el.getClientRects().length);
       const first = nodes[0], last = nodes[nodes.length - 1];

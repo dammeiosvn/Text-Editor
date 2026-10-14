@@ -60,3 +60,43 @@ Thống kê sau khi gõ được cập nhật sau 120ms ngừng gõ; văn bản 
 - Theo yêu cầu mới, thay toàn bộ luồng gửi Phím tắt bằng `shortcuts://run-shortcut?name=...&input=text&text=...`. Bỏ ngưỡng 1.800 ký tự và bỏ việc copy trước khi gọi; văn bản dài cũng truyền nguyên văn qua URL. Thông tin và README đã được sửa theo luồng này.
 - Kiểm tra tại ranh giới điều hướng OS: tên mặc định/tên tự nhập/Enter, tiếng Việt/emoji/ký tự URL/xuống dòng/văn bản dài đều giải mã đúng và không gọi clipboard. Chưa xác minh việc nhận trên ứng dụng Shortcuts của iOS thật.
 - Bộ kiểm tra hiện có 13 nhóm (11 nhóm trình duyệt, 2 nhóm danh mục). Nhóm kiểm tra Clipboard thất bại của bản 1.2.0 được thay bằng kiểm tra đầu vào Văn bản.
+
+## Cập nhật 1.2.2 — 14/10/2026: bàn phím và luồng nhập
+
+Mốc trước sửa: `f480efdb6c78fab7e19991714c0504f74603381d`.
+
+### Lỗi xác minh được trong code và trình duyệt
+
+| Trước sửa | Sau sửa |
+| --- | --- |
+| `tuneInput()` gán lại ba thuộc tính sau 120ms ngừng gõ, kể cả giá trị không đổi; vượt 80 ký tự liền nhau còn đổi cấu hình tự viết hoa khi ô vẫn focus. | Giữ cấu hình tự sửa/viết hoa trong phiên focus, chỉ gán attribute thực sự khác khi ô chưa focus. Đổi chế độ code là thao tác chủ động, cấu hình trước khi focus lại. |
+| `.autocorrect = "off"` được property boolean hiểu là `true`; kiểm tra thực tế thấy attribute vẫn là `on` ở chế độ code. | Dùng `setAttribute("autocorrect", "off")`, kiểm tra attribute và property boolean trên cả hai engine. Tham chiếu [chuẩn HTML về autocorrect](https://html.spec.whatwg.org/multipage/interaction.html#dom-autocorrect). |
+| Handler cuộn gọi `scrollTo(0, 0)` liên tục. 20 lượt sự kiện mô phỏng bàn phím tạo 21 lệnh ép cuộn. | Gom đồng bộ bằng requestAnimationFrame, cập nhật chiều cao và offset visualViewport; cùng phép thử có 0 lệnh ép cuộn và giữ focus. |
+| Chế độ code trừ 1px từ cỡ chữ thấp nhất 16px, còn 15px. | Cỡ chữ code không dưới 16px để giảm khả năng Safari zoom ô nhập. |
+| Chỉ kiểm tra `isComposing` trong một phần handler; phím tắt Ctrl/Cmd+F, Enter ở tên ghi chú/Phím tắt/tìm kiếm và trạng thái IME không gắn cờ vẫn chạy lệnh. | Theo dõi compositionstart/end/blur, kiểm tra thêm keyCode 229 và Process; bỏ xử lý lệnh khi đang ghép chữ, tiếp tục cập nhật thống kê sau compositionend. |
+| Lượt lọc ghi chú đã hẹn trước compositionstart vẫn chạy giữa lúc đang ghép chữ. | Hủy lượt lọc đang chờ và kiểm tra lại trạng thái composition trước khi render. |
+| Focus ô tên/ghi chú mới bị trì hoãn bằng setTimeout; có thể ra khỏi thao tác mở bàn phím được iOS cho phép. | Focus đồng bộ trong thao tác tạo/đổi tên; bỏ việc khôi phục focus trung gian khi công cụ quay lại editor. |
+| Nút ngoặc thay toàn bộ vùng chọn bằng cặp ngoặc rỗng; bấm nút có thể làm mất rồi lấy lại focus. | Bọc nguyên vùng chọn, giữ selection bên trong và giữ focus khi bấm các nút soạn thảo. |
+
+### Phạm vi kiểm tra
+
+- 8 nhóm hồi quy mới đều thất bại trên bản 1.2.1 trong Chromium trước khi sửa.
+- Bản 1.2.2 đạt **21/21 trên Chromium và 21/21 trên WebKit**: 19 nhóm trình duyệt, 2 nhóm danh mục ngôn ngữ. Các luồng cũ lưu/reload, chuyển ghi chú, Undo/Redo, tìm/thay, xuất tệp, lịch sử, đầu vào Phím tắt và lỗi lưu vẫn đạt.
+- Kiểm tra mới dùng cửa sổ 390×844, touch/mobile; quan sát mutation của thuộc tính nhập, focus, selection và lệnh scrollTo; có ghép dấu, keyCode 229, gõ chữ/số/ký tự và dán hơn 100.000 ký tự. Nút soạn thảo được thử cả touch tap và mouse click; chỉ chặn `mousedown` để giữ focus bằng chuột, không chặn `pointerdown`/touch để WebKit vẫn phát click.
+- Dán dữ liệu lớn chỉ tắt `spellcheck` một lần trước khi chèn để tránh kiểm tra chính tả nặng; không thay `autocorrect`, `autocapitalize` hay `inputmode` lúc dán. Cấu hình nặng/nhẹ được áp dụng khi rời ô nhập. Không ghi bẩn lại khi nội dung không thay đổi.
+- Đã xem ảnh WebKit trên khung điện thoại và cửa sổ thấp 390×300; kiểm tra 7 kích thước điện thoại/iPad/cửa sổ hẹp. Kiểm tra cú pháp JavaScript và `git diff --check` đạt.
+- Tăng phiên bản/cache URL lên 1.2.2 để tải bộ JS/CSS mới sau khi cập nhật trang.
+
+### Giới hạn và thử trên iPhone
+
+Chưa tái hiện trực tiếp nút **123 / #+= / ABC** trên bàn phím hệ thống iOS. Các lỗi ứng dụng phía trên đã tái hiện và sửa, nhưng liên hệ giữa chúng và triệu chứng kẹt bàn phím trên thiết bị của người dùng vẫn cần xác nhận bằng thiết bị thật. WebKit Linux và sự kiện composition/viewport mô phỏng không phải bàn phím iOS.
+
+Văn bản nhiều MiB vẫn có thể tốn thời gian bố trí/wrap trong textarea native; nhóm kiểm tra 6MiB lưu/reload hoàn thành ở cả hai engine nhưng chậm hơn rõ rệt trên WebKit. Chi phí handler không đo toàn bộ thời gian trình duyệt hay bàn phím hệ điều hành.
+
+Sau khi bản sửa được cập nhật lên GitHub Pages, thử trong Safari và WebClip màn hình chính:
+
+1. Gõ tiếng Việt, đổi ABC → 123 → #+= → ABC nhiều lần khi đang nhập; làm ở cả chế độ chữ và code.
+2. Thử ô tìm kiếm, tên ghi chú và tên Phím tắt; ghép dấu rồi Enter, bảo đảm chỉ gửi/chạy lệnh bằng Enter sau khi đã ghép xong.
+3. Dán chuỗi Base64 dài, đổi bàn phím và tiếp tục gõ; đóng/mở bàn phím, xoay máy, chuyển ứng dụng rồi quay lại.
+4. Chọn một đoạn chữ, bấm ngoặc/Tab/Undo/Redo; kiểm tra nội dung, vùng chọn và bàn phím.
+5. Mở lại WebClip, kiểm tra mục thông tin hiển thị 1.2.2 và nội dung vừa nhập vẫn còn sau reload.

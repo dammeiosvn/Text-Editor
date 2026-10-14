@@ -308,7 +308,7 @@ html, body { touch-action: manipulation; }
 
 .ed-input.mono {
   font-family: var(--font-mono);
-  font-size: calc(var(--editor-size, 17px) - 1px);
+  font-size: max(16px, calc(var(--editor-size, 17px) - 1px));
   line-height: 1.55;
 }
 
